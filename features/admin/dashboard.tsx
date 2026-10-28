@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ClipboardClock, FolderOpen, ShieldAlert, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo } from "react";
 
@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/feedback/states";
 import { Avatar } from "@/components/ui/avatar";
 import { PageHeader, Panel } from "@/components/ui/panel";
 import { Skeleton } from "@/components/ui/spinner";
+import { StatCards, type StatCard } from "@/components/ui/stat-cards";
 import { CaseTable } from "@/features/cases/case-table";
 import { summarize } from "@/features/stats/compute";
 import { useCases } from "@/hooks/use-cases";
@@ -39,11 +40,11 @@ export function AdminDashboard() {
     [members],
   );
 
-  const stats: { label: string; value: number; tone?: string; loading: boolean }[] = [
-    { label: "Awaiting review", value: summary.pendingReview, loading: isInitialLoading },
-    { label: "Total cases", value: summary.total, loading: isInitialLoading },
-    { label: "Suspected", value: summary.suspected, tone: "text-suspect", loading: isInitialLoading },
-    { label: "Active examiners", value: activeExaminers, loading: teamLoading && members.length === 0 },
+  const stats: StatCard[] = [
+    { label: "Awaiting review", value: summary.pendingReview, icon: ClipboardClock, tone: "pending", loading: isInitialLoading },
+    { label: "Total cases", value: summary.total, icon: FolderOpen, tone: "brand", loading: isInitialLoading },
+    { label: "Suspected", value: summary.suspected, icon: ShieldAlert, tone: "suspect", toneValue: true, loading: isInitialLoading },
+    { label: "Active examiners", value: activeExaminers, icon: Users, tone: "brand", loading: teamLoading && members.length === 0 },
   ];
 
   return (
@@ -53,19 +54,7 @@ export function AdminDashboard() {
         description={profile?.firstName ? `Signed in as ${profile.firstName} ${profile.lastName} · Org Admin` : "Org Admin"}
       />
 
-      <dl className="mb-8 grid grid-cols-2 overflow-hidden rounded-lg border border-line bg-surface shadow-card lg:grid-cols-4">
-        {stats.map((stat, index) => (
-          <div
-            key={stat.label}
-            className={`border-line px-5 py-4 ${index % 2 ? "border-l" : ""} ${index >= 2 ? "border-t lg:border-t-0" : ""} ${index === 2 ? "lg:border-l" : ""}`}
-          >
-            <dt className="text-[12.5px] font-medium text-ink-3">{stat.label}</dt>
-            <dd className={`mt-1 text-[22px] font-bold tabular ${stat.tone ?? "text-ink"}`}>
-              {stat.loading ? <Skeleton className="mt-1 h-6 w-10" /> : stat.value}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <StatCards className="mb-8" stats={stats} />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <section>

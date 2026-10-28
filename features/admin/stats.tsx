@@ -1,5 +1,6 @@
 "use client";
 
+import { CalendarRange, ClipboardClock, FolderOpen, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -7,7 +8,7 @@ import { EmptyState, LoadError } from "@/components/feedback/states";
 import { Avatar } from "@/components/ui/avatar";
 import { Segmented } from "@/components/ui/controls";
 import { PageHeader, Panel } from "@/components/ui/panel";
-import { Skeleton } from "@/components/ui/spinner";
+import { StatCards } from "@/components/ui/stat-cards";
 import { BarList, StackedColumns, VerdictSplit } from "@/features/stats/charts";
 import {
   GRANULARITIES,
@@ -65,19 +66,15 @@ export function AdminStats() {
         }
       />
 
-      <dl className="mb-6 grid grid-cols-2 overflow-hidden rounded-lg border border-line bg-surface shadow-card lg:grid-cols-4">
-        {[
-          { label: `Cases · ${range.toLowerCase()}`, value: summary.total },
-          { label: "Cases in the last 7 days", value: casesThisWeek },
-          { label: "Awaiting review", value: summary.pendingReview },
-          { label: "Active examiners", value: `${active.length} / ${members.length}` },
-        ].map((stat, index) => (
-          <div key={stat.label} className={`border-line px-5 py-4 ${index % 2 ? "border-l" : ""} ${index >= 2 ? "border-t lg:border-t-0" : ""} ${index === 2 ? "lg:border-l" : ""}`}>
-            <dt className="text-[12.5px] font-medium text-ink-3">{stat.label}</dt>
-            <dd className="mt-1 text-[22px] font-bold text-ink tabular">{isInitialLoading ? <Skeleton className="mt-1 h-6 w-10" /> : stat.value}</dd>
-          </div>
-        ))}
-      </dl>
+      <StatCards
+        className="mb-6"
+        stats={[
+          { label: `Cases · ${range.toLowerCase()}`, value: summary.total, icon: FolderOpen, tone: "brand", loading: isInitialLoading },
+          { label: "Cases in the last 7 days", value: casesThisWeek, icon: CalendarRange, tone: "brand", loading: isInitialLoading },
+          { label: "Awaiting review", value: summary.pendingReview, icon: ClipboardClock, tone: "pending", loading: isInitialLoading },
+          { label: "Active examiners", value: `${active.length} / ${members.length}`, icon: Users, tone: "brand", loading: isInitialLoading },
+        ]}
+      />
 
       {!isInitialLoading && cases.length === 0 ? (
         <Panel>

@@ -49,6 +49,18 @@ function sortCases(cases: CaseSummary[], sort: SortKey) {
   return sorted.sort(byDate);
 }
 
+// Full class names so Tailwind can see them. Headers and cells only become table
+// cells from md up (below that rows render as stacked cards).
+const COLUMN_VISIBILITY = {
+  user: { examiner: "", priority: "md:@3xl:table-cell", document: "md:@4xl:table-cell", review: "" },
+  admin: {
+    examiner: "md:@3xl:table-cell",
+    priority: "md:@4xl:table-cell",
+    document: "md:@5xl:table-cell",
+    review: "md:@6xl:table-cell",
+  },
+} as const;
+
 export function CaseTable({
   cases,
   mode,
@@ -86,10 +98,10 @@ export function CaseTable({
     return limit ? sorted.slice(0, limit) : sorted;
   }, [cases, limit, mode, priority, query, sort, verdict]);
 
-  // Embedded tables (dashboards) share the row with a side panel from xl up, so the
-  // secondary columns step aside there until the screen is wide enough again.
-  const detailCells = toolbar ? "lg:table-cell" : "lg:table-cell xl:hidden 2xl:table-cell";
-  const reviewCells = toolbar ? "xl:table-cell" : "2xl:table-cell";
+  // Secondary columns appear by the table's own width (container queries), not the
+  // viewport's, because the same table sits full-width on list pages and beside a
+  // side panel on dashboards. Each step leaves room for the longest case codes.
+  const columns = COLUMN_VISIBILITY[mode];
 
   const filtersActive = Boolean(query.trim()) || verdict !== "All" || priority !== "All";
 
@@ -137,7 +149,7 @@ export function CaseTable({
         </div>
       ) : null}
 
-      <div className="overflow-hidden rounded-lg border border-line bg-surface shadow-card">
+      <div className="@container overflow-x-auto rounded-lg border border-line bg-surface shadow-card">
         {error && cases.length === 0 ? (
           <LoadError message={error} onRetry={onRetry} />
         ) : isLoading && cases.length === 0 ? (
@@ -166,13 +178,13 @@ export function CaseTable({
               <tr>
                 <th scope="col" className="py-2.5 pr-3 pl-5 font-semibold">Case</th>
                 <th scope="col" className="px-3 py-2.5 font-semibold">Subject</th>
-                {mode === "admin" ? <th scope="col" className="px-3 py-2.5 font-semibold">Examiner</th> : null}
-                <th scope="col" className={cn("hidden px-3 py-2.5 font-semibold", detailCells)}>Document</th>
-                <th scope="col" className={cn("hidden px-3 py-2.5 font-semibold", detailCells)}>Priority</th>
+                {mode === "admin" ? <th scope="col" className={cn("hidden px-3 py-2.5 font-semibold", columns.examiner)}>Examiner</th> : null}
+                <th scope="col" className={cn("hidden px-3 py-2.5 font-semibold", columns.document)}>Document</th>
+                <th scope="col" className={cn("hidden px-3 py-2.5 font-semibold", columns.priority)}>Priority</th>
                 <th scope="col" className="px-3 py-2.5 font-semibold">Verdict</th>
-                {mode === "admin" ? <th scope="col" className={cn("hidden px-3 py-2.5 font-semibold", reviewCells)}>Review</th> : null}
+                {mode === "admin" ? <th scope="col" className={cn("hidden px-3 py-2.5 font-semibold", columns.review)}>Review</th> : null}
                 <th scope="col" className="px-3 py-2.5 text-right font-semibold">Created</th>
-                <th scope="col" className="w-10 pr-4"><span className="sr-only">Open</span></th>
+                <th scope="col" className="w-11 pr-5"><span className="sr-only">Open</span></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -189,15 +201,18 @@ export function CaseTable({
                         <Flag className="ml-2 inline size-3.5 text-caution" aria-label="Flagged for internal review" />
                       ) : null}
                     </td>
-                    <td className="w-full truncate text-ink-2 md:w-auto md:max-w-55 md:px-3">{item.subjectName || "—"}</td>
-                    {mode === "admin" ? <td className="hidden truncate text-ink-2 md:table-cell md:max-w-45 md:px-3">{item.examiner || "—"}</td> : null}
-                    <td className={cn("hidden whitespace-nowrap text-ink-2 lg:px-3", detailCells)}>
+                    {/* w-full + max-w-0 makes Subject the column that absorbs spare width and truncates first. */}
+                    <td className="w-full text-ink-2 md:max-w-0 md:px-3">
+                      <span className="block truncate" title={item.subjectName || undefined}>{item.subjectName || "—"}</span>
+                    </td>
+                    {mode === "admin" ? <td className={cn("hidden truncate text-ink-2 md:max-w-45 md:px-3", columns.examiner)}>{item.examiner || "—"}</td> : null}
+                    <td className={cn("hidden whitespace-nowrap text-ink-2 md:px-3", columns.document)}>
                       {item.documentType === "Other" && item.otherDocumentType ? item.otherDocumentType : item.documentType}
                     </td>
-                    <td className={cn("hidden lg:px-3", detailCells)}>
+                    <td className={cn("hidden whitespace-nowrap md:px-3", columns.priority)}>
                       <PriorityLabel priority={item.priority} />
                     </td>
-                    <td className="md:px-3">
+                    <td className="whitespace-nowrap md:px-3">
                       <span className="inline-flex items-center gap-2">
                         <VerdictBadge status={item.status} />
                         {/* The model confidence belongs to the model's own verdict; hide it when a review overrode that verdict. */}
@@ -209,12 +224,12 @@ export function CaseTable({
                       </span>
                     </td>
                     {mode === "admin" ? (
-                      <td className={cn("hidden xl:px-3", reviewCells)}>
+                      <td className={cn("hidden whitespace-nowrap md:px-3", columns.review)}>
                         <WorkflowBadge status={item.workflowStatus} />
                       </td>
                     ) : null}
                     <td className="ml-auto text-right whitespace-nowrap text-ink-3 tabular md:px-3">{formatDate(item.createdAt)}</td>
-                    <td className="hidden pr-4 text-ink-4 md:table-cell">
+                    <td className="hidden pr-5 text-ink-4 md:table-cell">
                       <ChevronRight className="size-4 transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden />
                     </td>
                   </tr>

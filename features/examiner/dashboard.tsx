@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, FileClock, FilePen, FileSearch } from "lucide-react";
+import { ArrowRight, CalendarPlus, FileClock, FilePen, FileSearch, FolderOpen, LoaderCircle, ShieldAlert, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
@@ -8,7 +8,7 @@ import { useMemo } from "react";
 import { Alert, EmptyState } from "@/components/feedback/states";
 import { NewAnalysisButton, useCaseLimit } from "@/components/navigation/new-analysis-button";
 import { PageHeader, Panel } from "@/components/ui/panel";
-import { Skeleton } from "@/components/ui/spinner";
+import { StatCards } from "@/components/ui/stat-cards";
 import { CaseTable } from "@/features/cases/case-table";
 import { useCases } from "@/hooks/use-cases";
 import { formatRelativeTime } from "@/lib/format";
@@ -112,24 +112,17 @@ export function ExaminerDashboard() {
         </Alert>
       ) : null}
 
-      <dl className="mb-8 grid grid-cols-2 overflow-hidden rounded-lg border border-line bg-surface shadow-card sm:grid-cols-4">
-        {[
-          { label: "Total cases", value: summary.total },
-          { label: "Genuine", value: summary.genuine, tone: "text-genuine" },
-          { label: "Suspected", value: summary.suspected, tone: "text-suspect" },
-          {
-            label: limit !== null ? "Created today" : "Processing",
-            value: limit !== null ? `${casesToday} / ${limit}` : summary.processing,
-          },
-        ].map((stat, index) => (
-          <div key={stat.label} className={`px-5 py-4 ${index % 2 ? "border-l" : ""} border-line ${index >= 2 ? "border-t sm:border-t-0" : ""} ${index === 2 ? "sm:border-l" : ""}`}>
-            <dt className="text-[12.5px] font-medium text-ink-3">{stat.label}</dt>
-            <dd className={`mt-1 text-[22px] font-bold tabular ${stat.tone ?? "text-ink"}`}>
-              {isInitialLoading ? <Skeleton className="mt-1 h-6 w-10" /> : stat.value}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <StatCards
+        className="mb-8"
+        stats={[
+          { label: "Total cases", value: summary.total, icon: FolderOpen, tone: "brand", loading: isInitialLoading },
+          { label: "Genuine", value: summary.genuine, icon: ShieldCheck, tone: "genuine", toneValue: true, loading: isInitialLoading },
+          { label: "Suspected", value: summary.suspected, icon: ShieldAlert, tone: "suspect", toneValue: true, loading: isInitialLoading },
+          limit !== null
+            ? { label: "Created today", value: `${casesToday} / ${limit}`, icon: CalendarPlus, tone: "pending", loading: isInitialLoading }
+            : { label: "Processing", value: summary.processing, icon: LoaderCircle, tone: "pending", loading: isInitialLoading },
+        ]}
+      />
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <section>
