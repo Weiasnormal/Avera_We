@@ -79,31 +79,31 @@ export type TimeRange = (typeof TIME_RANGES)[number];
 export const GRANULARITIES = ["Hourly", "Daily", "Weekly", "Monthly"] as const;
 export type Granularity = (typeof GRANULARITIES)[number];
 
-export function filterByRange(cases: CaseSummary[], range: TimeRange) {
-  const now = new Date();
-  let start: Date;
+/** First moment counted by a time range. */
+function rangeStart(range: TimeRange, now = new Date()) {
   switch (range) {
     case "Today":
-      start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      break;
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate());
     case "This Week":
-      start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
-      break;
+      return new Date(now.getFullYear(), now.getMonth(), now.getDate() - 6);
     case "This Month":
-      start = new Date(now.getFullYear(), now.getMonth(), 1);
-      break;
+      return new Date(now.getFullYear(), now.getMonth(), 1);
     case "This Quarter":
-      start = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
-      break;
+      return new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
     default:
-      start = new Date(now.getFullYear(), 0, 1);
+      return new Date(now.getFullYear(), 0, 1);
   }
+}
+
+export function filterByRange(cases: CaseSummary[], range: TimeRange) {
+  const start = rangeStart(range);
   return cases.filter((item) => new Date(item.createdAt) >= start);
 }
 
-export function trendBuckets(cases: CaseSummary[], granularity: Granularity): Bucket[] {
-  if (granularity === "Monthly") return monthlyBuckets(cases);
+export function trendBuckets(cases: CaseSummary[], granularity: Granularity, periods?: number): Bucket[] {
+  if (granularity === "Monthly") return monthlyBuckets(cases, periods);
   const config = { Hourly: { count: 6, hours: 4 }, Daily: { count: 7, hours: 24 }, Weekly: { count: 5, hours: 24 * 7 } }[granularity];
+  if (periods) config.count = periods;
   const stepMs = config.hours * 3_600_000;
   const now = Date.now();
   const buckets = Array.from({ length: config.count }, (_, index) => {
@@ -126,4 +126,32 @@ export function trendBuckets(cases: CaseSummary[], granularity: Granularity): Bu
     if (item.status === "Suspected") bucket.suspected += 1;
   }
   return buckets.map(({ label, genuine, suspected }) => ({ label, genuine, suspected }));
+}
+
+/** "This Week" → "This week" for controls (sentence case). */
+export const rangeLabel = (range: TimeRange) => range.charAt(0) + range.slice(1).toLowerCase();
+
+/**
+ * Trend for a time range: the range picks the period size, so one control drives
+ * every panel. Months read best as columns; shorter periods as lines.
+ */
+export function rangeTrend(cases: CaseSummary[], range: TimeRange): { buckets: Bucket[]; kind: "columns" | "lines"; caption: string } {
+  const now = new Date();
+  // Weekly views cover exactly the weeks inside the range, so the chart agrees with the cards.
+  const weeksSoFar = Math.max(2, Math.ceil((now.getTime() - rangeStart(range, now).getTime()) / (7 * 86_400_000)));
+  switch (range) {
+    case "Today":
+      return { buckets: trendBuckets(cases, "Hourly"), kind: "lines", caption: "Genuine and suspected cases, every 4 hours" };
+    case "This Week":
+      return { buckets: trendBuckets(cases, "Daily"), kind: "lines", caption: "Genuine and suspected cases per day" };
+    case "This Month":
+    case "This Quarter":
+      return { buckets: trendBuckets(cases, "Weekly", weeksSoFar), kind: "lines", caption: "Genuine and suspected cases per week" };
+    default:
+      return {
+        buckets: monthlyBuckets(cases, now.getMonth() + 1),
+        kind: "columns",
+        caption: "Genuine and suspected cases per month",
+      };
+  }
 }

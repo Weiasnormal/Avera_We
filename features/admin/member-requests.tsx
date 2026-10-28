@@ -1,12 +1,13 @@
 "use client";
 
-import { Check, X } from "lucide-react";
+import { Check, LoaderCircle, X } from "lucide-react";
 import { useState } from "react";
 
 import { EmptyState } from "@/components/feedback/states";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/spinner";
+import { cn } from "@/lib/cn";
 import { formatRelativeTime } from "@/lib/format";
 import { useAdminStore } from "@/stores/admin";
 
@@ -63,38 +64,97 @@ export function MemberRequests({ limit, compact }: { limit?: number; compact?: b
       {/* Container query: in the narrow overview column the actions drop under the name. */}
       <ul className="@container divide-y divide-line">
         {shown.map((request) => (
-          <li key={request.id} className="flex flex-wrap items-center gap-x-3 gap-y-2.5 px-5 py-3.5">
-            <Avatar firstName={request.firstName} lastName={request.lastName} size={36} />
+          <li
+            key={request.id}
+            className={cn("flex flex-wrap items-center gap-y-2.5", compact ? "gap-x-2.5 px-4 py-3" : "gap-x-3 px-5 py-3.5")}
+          >
+            <Avatar firstName={request.firstName} lastName={request.lastName} size={compact ? 32 : 36} />
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[14px] font-semibold text-ink">
+              <p className="truncate text-[14px] font-semibold text-ink" title={`${request.firstName} ${request.lastName}`}>
                 {request.firstName} {request.lastName}
               </p>
-              <p className="text-[12.5px] text-ink-3">Requested {formatRelativeTime(request.requestedAt)}</p>
+              <p className="truncate text-[12.5px] text-ink-3">
+                {compact ? "" : "Requested "}
+                {formatRelativeTime(request.requestedAt)}
+              </p>
             </div>
-            <div className="flex w-full gap-2 pl-12 @md:w-auto @md:pl-0">
-              <Button
-                size="sm"
-                variant="secondary"
-                icon={<X className="size-3.5" />}
-                loading={busy === `reject:${request.id}`}
-                disabled={busy !== null}
-                onClick={() => void act(request.id, "reject")}
-              >
-                Decline
-              </Button>
-              <Button
-                size="sm"
-                icon={<Check className="size-3.5" />}
-                loading={busy === `approve:${request.id}`}
-                disabled={busy !== null || seatsFull}
-                onClick={() => void act(request.id, "approve")}
-              >
-                Approve
-              </Button>
-            </div>
+            {compact ? (
+              // Narrow overview column: round icon actions, as on the mobile admin home.
+              <div className="flex shrink-0 gap-1.5">
+                <IconAction
+                  label={`Decline ${request.firstName} ${request.lastName}`}
+                  tone="decline"
+                  loading={busy === `reject:${request.id}`}
+                  disabled={busy !== null}
+                  onClick={() => void act(request.id, "reject")}
+                />
+                <IconAction
+                  label={seatsFull ? "No seats left" : `Approve ${request.firstName} ${request.lastName}`}
+                  tone="approve"
+                  loading={busy === `approve:${request.id}`}
+                  disabled={busy !== null || seatsFull}
+                  onClick={() => void act(request.id, "approve")}
+                />
+              </div>
+            ) : (
+              <div className="flex w-full gap-2 pl-12 @md:w-auto @md:pl-0">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={<X className="size-3.5" />}
+                  loading={busy === `reject:${request.id}`}
+                  disabled={busy !== null}
+                  onClick={() => void act(request.id, "reject")}
+                >
+                  Decline
+                </Button>
+                <Button
+                  size="sm"
+                  icon={<Check className="size-3.5" />}
+                  loading={busy === `approve:${request.id}`}
+                  disabled={busy !== null || seatsFull}
+                  onClick={() => void act(request.id, "approve")}
+                >
+                  Approve
+                </Button>
+              </div>
+            )}
           </li>
         ))}
       </ul>
     </>
+  );
+}
+
+function IconAction({
+  label,
+  tone,
+  loading,
+  disabled,
+  onClick,
+}: {
+  label: string;
+  tone: "approve" | "decline";
+  loading: boolean;
+  disabled: boolean;
+  onClick: () => void;
+}) {
+  const Icon = loading ? LoaderCircle : tone === "approve" ? Check : X;
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      title={label}
+      disabled={disabled}
+      onClick={onClick}
+      className={cn(
+        "pressable flex size-8 items-center justify-center rounded-full border bg-surface disabled:cursor-not-allowed disabled:opacity-50",
+        tone === "approve"
+          ? "border-genuine-line text-genuine hover:bg-genuine-soft"
+          : "border-suspect-line text-suspect hover:bg-suspect-soft",
+      )}
+    >
+      <Icon aria-hidden className={cn("size-4", loading && "animate-spin")} strokeWidth={2.25} />
+    </button>
   );
 }

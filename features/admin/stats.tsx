@@ -1,42 +1,42 @@
 "use client";
 
-import { CalendarRange, ClipboardClock, FolderOpen, Users } from "lucide-react";
+import { FolderOpen, CircleAlert, CircleCheck, Users } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { EmptyState, LoadError } from "@/components/feedback/states";
 import { Avatar } from "@/components/ui/avatar";
-import { Segmented } from "@/components/ui/controls";
 import { PageHeader, Panel } from "@/components/ui/panel";
+import { Skeleton } from "@/components/ui/spinner";
 import { StatCards } from "@/components/ui/stat-cards";
-import { BarList, StackedColumns, VerdictSplit } from "@/features/stats/charts";
-import {
-  GRANULARITIES,
-  TIME_RANGES,
-  filterByRange,
-  summarize,
-  trendBuckets,
-  type Granularity,
-  type TimeRange,
-} from "@/features/stats/compute";
+import { BarList, ChartKindToggle, TrendChart, VerdictDonut, type ChartKind } from "@/features/stats/charts";
+import { filterByRange, rangeLabel, rangeTrend, summarize, type TimeRange } from "@/features/stats/compute";
+import { RangePicker } from "@/features/stats/range-picker";
 import { useCases } from "@/hooks/use-cases";
 import { routes } from "@/lib/routes";
 import { useAdminStore } from "@/stores/admin";
 
-/** Organization statistics (mobile admin_stats.tsx). */
+const share = (part: number, whole: number) => (whole ? `${Math.round((part / whole) * 100)}% of verdicts` : undefined);
+
+/** Organization statistics (mobile admin_stats.tsx): the same four figures, one range for every panel. */
 export function AdminStats() {
   const { cases, error, reload, isInitialLoading } = useCases();
   const members = useAdminStore((state) => state.members);
+  const tenant = useAdminStore((state) => state.tenant);
+  const teamLoading = useAdminStore((state) => state.teamStatus === "idle" || state.teamStatus === "loading");
   const [range, setRange] = useState<TimeRange>("This Year");
-  const [granularity, setGranularity] = useState<Granularity>("Weekly");
 
   useEffect(() => {
+    void useAdminStore.getState().loadTenant();
     void useAdminStore.getState().loadTeam();
   }, []);
 
   const inRange = useMemo(() => filterByRange(cases, range), [cases, range]);
   const summary = useMemo(() => summarize(inRange), [inRange]);
-  const buckets = useMemo(() => trendBuckets(cases, granularity), [cases, granularity]);
+  const trend = useMemo(() => rangeTrend(cases, range), [cases, range]);
+  // Each range suggests a chart type; once the user picks one it sticks across ranges.
+  const [chosenKind, setChosenKind] = useState<ChartKind | null>(null);
+  const chartKind = chosenKind ?? trend.kind;
   const [now] = useState(() => Date.now());
   const casesThisWeek = useMemo(() => {
     const weekAgo = now - 7 * 86_400_000;
@@ -44,6 +44,7 @@ export function AdminStats() {
   }, [cases, now]);
   const active = members.filter((member) => member.status === "active");
   const ranked = [...active].sort((a, b) => b.casesHandled - a.casesHandled);
+  const decided = summary.genuine + summary.suspected;
 
   if (error && cases.length === 0) return <LoadError message={error} onRetry={() => void reload()} />;
 
@@ -51,60 +52,68 @@ export function AdminStats() {
     <>
       <PageHeader
         title="Statistics"
-        description="Organization-wide case volume and outcomes."
-        actions={
-          <select
-            aria-label="Time range"
-            value={range}
-            onChange={(event) => setRange(event.target.value as TimeRange)}
-            className="h-10 rounded-md border border-line-strong bg-surface px-3 text-[13px] font-semibold text-ink outline-none focus:border-brand"
-          >
-            {TIME_RANGES.map((value) => (
-              <option key={value}>{value}</option>
-            ))}
-          </select>
-        }
+        description={`Organization-wide volume and outcomes, ${rangeLabel(range).toLowerCase()}.`}
+        actions={<RangePicker value={range} onChange={setRange} />}
       />
 
       <StatCards
-        className="mb-6"
+        className="mb-5"
         stats={[
-          { label: `Cases · ${range.toLowerCase()}`, value: summary.total, icon: FolderOpen, tone: "brand", loading: isInitialLoading },
-          { label: "Cases in the last 7 days", value: casesThisWeek, icon: CalendarRange, tone: "brand", loading: isInitialLoading },
-          { label: "Awaiting review", value: summary.pendingReview, icon: ClipboardClock, tone: "pending", loading: isInitialLoading },
-          { label: "Active examiners", value: `${active.length} / ${members.length}`, icon: Users, tone: "brand", loading: isInitialLoading },
+          {
+            label: "Active examiners",
+            value: active.length,
+            meta:
+              tenant && tenant.memberCountLimit > 0
+                ? `${tenant.memberCount} of ${tenant.memberCountLimit} seats used`
+                : `${active.length} of ${members.length} examiners`,
+            icon: Users,
+            tone: "brand",
+            loading: teamLoading && members.length === 0,
+          },
+          { label: "Total cases", value: summary.total, meta: `${casesThisWeek} this week`, icon: FolderOpen, tone: "brand", loading: isInitialLoading },
+          { label: "Genuine", value: summary.genuine, meta: share(summary.genuine, decided), icon: CircleCheck, tone: "genuine", loading: isInitialLoading },
+          { label: "Suspected", value: summary.suspected, meta: share(summary.suspected, decided), icon: CircleAlert, tone: "suspect", loading: isInitialLoading },
         ]}
       />
 
-      {!isInitialLoading && cases.length === 0 ? (
+      {isInitialLoading ? (
+        <div className="grid gap-5 lg:grid-cols-2">
+          <Skeleton className="h-80 rounded-lg lg:col-span-2" />
+          <Skeleton className="h-48 rounded-lg" />
+          <Skeleton className="h-48 rounded-lg" />
+        </div>
+      ) : cases.length === 0 ? (
         <Panel>
           <EmptyState illustration="/illustrations/emptydash.webp" title="No statistics yet" description="Statistics appear once your examiners analyze cases." />
         </Panel>
       ) : (
-        <div className="stagger-in grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        // Two equal columns so panel edges line up with the cards above.
+        <div className="stagger-in grid gap-5 lg:grid-cols-2">
           <Panel
-            title="Case trend"
+            title="Cases over time"
+            description={trend.caption}
+            className="lg:col-span-2"
+            actions={<ChartKindToggle value={chartKind} onChange={setChosenKind} />}
+          >
+            <TrendChart buckets={trend.buckets} kind={chartKind} caption={trend.caption} />
+          </Panel>
+          <Panel title="Verdicts" description={`${decided} decided${summary.processing ? ` · ${summary.processing} processing` : ""}`}>
+            <VerdictDonut genuine={summary.genuine} suspected={summary.suspected} />
+          </Panel>
+          <Panel title="Document types">
+            <BarList items={summary.documentTypes} emptyLabel="No cases in this range" />
+          </Panel>
+          <Panel
+            title="Top examiners"
+            description="By cases handled"
+            className="lg:col-span-2"
+            bodyClassName="p-0"
             actions={
-              <Segmented
-                label="Granularity"
-                size="sm"
-                value={granularity}
-                onChange={setGranularity}
-                options={GRANULARITIES.map((value) => ({ value, label: value }))}
-              />
+              <Link href={routes.admin.team} className="text-[13px] font-semibold text-brand hover:underline">
+                Manage team
+              </Link>
             }
           >
-            <StackedColumns buckets={buckets} caption={`Genuine and suspected cases, ${granularity.toLowerCase()}`} />
-          </Panel>
-          <div className="flex flex-col gap-6">
-            <Panel title="Verdicts" description={range}>
-              <VerdictSplit genuine={summary.genuine} suspected={summary.suspected} />
-            </Panel>
-            <Panel title="Document types" description={range}>
-              <BarList items={summary.documentTypes} emptyLabel="No cases in this range" />
-            </Panel>
-          </div>
-          <Panel title="Examiners by cases handled" className="lg:col-span-2" bodyClassName="p-0">
             {ranked.length === 0 ? (
               <EmptyState compact title="No active examiners" />
             ) : (
@@ -117,7 +126,9 @@ export function AdminStats() {
                       <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold">
                         {member.firstName} {member.lastName}
                       </span>
-                      <span className="text-[13px] text-ink-2 tabular">{member.casesHandled}</span>
+                      <span className="text-[13px] text-ink-2 tabular">
+                        <strong className="font-semibold text-ink">{member.casesHandled}</strong> case{member.casesHandled === 1 ? "" : "s"}
+                      </span>
                     </Link>
                   </li>
                 ))}

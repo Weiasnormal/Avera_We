@@ -38,7 +38,11 @@
   --color-caution-soft: #fffbeb;
   --color-caution-line: #fde68a;
 
-  --color-pending: #ea7317;
+  /* Waiting for a reviewer (admin). Same amber as the mobile app's Pending review icon. */
+  --color-pending: #d97706;
+  --color-pending-soft: #fffaf0;
+  --color-pending-line: #fcdba6;
+  --color-pending-ink: #92400e;
 
   /* Chart marks (statistics). Saturated for the current period, tinted for the past. */
   --color-chart-genuine: #16a34a;
@@ -74,6 +78,14 @@
   from {
     opacity: 0;
     transform: translateY(6px) scale(0.985);
+  }
+}
+
+/* Menus open from their trigger: a short drop with a slight scale, never from zero. */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
   }
 }
 

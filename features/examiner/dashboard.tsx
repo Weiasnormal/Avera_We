@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, CalendarPlus, FileClock, FilePen, FileSearch, FolderOpen, LoaderCircle, ShieldAlert, ShieldCheck } from "lucide-react";
+import { ArrowRight, CalendarPlus, FileClock, FilePen, FileSearch, FolderOpen, LoaderCircle, CircleAlert, CircleCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
@@ -22,11 +22,27 @@ type PendingItem =
   | { kind: "draft"; key: string; title: string; detail: string; draft: Draft; sortKey: number }
   | { kind: "processing" | "result"; key: string; title: string; detail: string; item: CaseSummary; sortKey: number };
 
+// Blue = in progress or yours to open (never green: a ready result can be Suspected).
 const KIND_META = {
-  draft: { label: "Draft", icon: FilePen, tone: "text-ink-2 bg-sunken" },
-  processing: { label: "Processing", icon: FileClock, tone: "text-brand bg-brand-soft" },
-  result: { label: "Result ready", icon: FileSearch, tone: "text-genuine bg-genuine-soft" },
+  draft: { label: "Draft", icon: FilePen, tile: "bg-sunken text-ink-2", text: "text-ink-3" },
+  processing: { label: "Processing", icon: FileClock, tile: "bg-brand-soft text-brand", text: "text-brand" },
+  result: { label: "Result ready", icon: FileSearch, tile: "bg-brand-soft text-brand", text: "text-brand" },
 } as const;
+
+const plural = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
+
+/** One sentence under the greeting saying what is waiting, in priority order. */
+function attentionSummary(pending: PendingItem[]) {
+  const count = (kind: PendingItem["kind"]) => pending.filter((entry) => entry.kind === kind).length;
+  const parts = [
+    count("result") ? plural(count("result"), "result is ready to open", "results are ready to open") : null,
+    count("processing") ? plural(count("processing"), "analysis is still running", "analyses are still running") : null,
+    count("draft") ? plural(count("draft"), "draft to finish", "drafts to finish") : null,
+  ].filter(Boolean);
+  return parts.length ? `${parts.join(", ")}.` : "You\u2019re all caught up.";
+}
+
+const percentOf = (part: number, whole: number) => (whole ? `${Math.round((part / whole) * 100)}% of verdicts` : undefined);
 
 /** Mobile getPendingCards: drafts, cases still processing, and unopened results. */
 function usePendingItems(cases: CaseSummary[]): PendingItem[] {
@@ -76,15 +92,20 @@ export function ExaminerDashboard() {
   const pending = usePendingItems(cases);
   const { limit, casesToday, reached } = useCaseLimit();
 
-  const summary = useMemo(
-    () => ({
+  const summary = useMemo(() => {
+    const now = new Date();
+    return {
       total: cases.length,
       genuine: cases.filter((item) => item.status === "Genuine").length,
       suspected: cases.filter((item) => item.status === "Suspected").length,
       processing: cases.filter((item) => item.workflowStatus === "Processing").length,
-    }),
-    [cases],
-  );
+      thisMonth: cases.filter((item) => {
+        const created = new Date(item.createdAt);
+        return created.getFullYear() === now.getFullYear() && created.getMonth() === now.getMonth();
+      }).length,
+    };
+  }, [cases]);
+  const decided = summary.genuine + summary.suspected;
 
   const openPending = (entry: PendingItem) => {
     if (entry.kind === "draft") {
@@ -102,7 +123,7 @@ export function ExaminerDashboard() {
     <>
       <PageHeader
         title={profile?.firstName ? `Welcome back, ${profile.firstName}` : "Dashboard"}
-        description={profile?.organization || undefined}
+        description={isInitialLoading ? profile?.organization || undefined : attentionSummary(pending)}
         actions={<NewAnalysisButton className="lg:hidden" />}
       />
 
@@ -115,17 +136,61 @@ export function ExaminerDashboard() {
       <StatCards
         className="mb-8"
         stats={[
-          { label: "Total cases", value: summary.total, icon: FolderOpen, tone: "brand", loading: isInitialLoading },
-          { label: "Genuine", value: summary.genuine, icon: ShieldCheck, tone: "genuine", toneValue: true, loading: isInitialLoading },
-          { label: "Suspected", value: summary.suspected, icon: ShieldAlert, tone: "suspect", toneValue: true, loading: isInitialLoading },
+          {
+            label: "Total cases",
+            value: summary.total,
+            meta: `${summary.thisMonth} this month`,
+            icon: FolderOpen,
+            tone: "brand",
+            href: routes.examiner.cases,
+            loading: isInitialLoading,
+          },
+          {
+            label: "Genuine",
+            value: summary.genuine,
+            meta: percentOf(summary.genuine, decided),
+            icon: CircleCheck,
+            tone: "genuine",
+            href: `${routes.examiner.cases}?filter=genuine`,
+            loading: isInitialLoading,
+          },
+          {
+            label: "Suspected",
+            value: summary.suspected,
+            meta: percentOf(summary.suspected, decided),
+            icon: CircleAlert,
+            tone: "suspect",
+            href: `${routes.examiner.cases}?filter=suspected`,
+            loading: isInitialLoading,
+          },
           limit !== null
-            ? { label: "Created today", value: `${casesToday} / ${limit}`, icon: CalendarPlus, tone: "pending", loading: isInitialLoading }
-            : { label: "Processing", value: summary.processing, icon: LoaderCircle, tone: "pending", loading: isInitialLoading },
+            ? {
+                label: "Created today",
+                value: (
+                  <>
+                    {casesToday}
+                    <span className="text-[0.6em] font-semibold text-ink-4"> / {limit}</span>
+                  </>
+                ),
+                progress: { value: casesToday, max: limit },
+                icon: CalendarPlus,
+                tone: "brand",
+                loading: isInitialLoading,
+              }
+            : {
+                label: "Processing",
+                value: summary.processing,
+                icon: LoaderCircle,
+                tone: "brand",
+                href: `${routes.examiner.cases}?filter=processing`,
+                loading: isInitialLoading,
+              },
         ]}
       />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <section>
+      {/* Four columns from xl: the side panel is exactly one card wide, so its edges line up with the cards. */}
+      <div className="grid gap-5 xl:grid-cols-4">
+        <section className="min-w-0 xl:col-span-3">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-[16px] font-semibold">Recent cases</h2>
             <Link href={routes.examiner.cases} className="inline-flex items-center gap-1 text-[13px] font-semibold text-brand hover:underline">
@@ -136,7 +201,7 @@ export function ExaminerDashboard() {
             cases={cases}
             mode="user"
             toolbar={false}
-            limit={6}
+            limit={8}
             hrefFor={(item) =>
               item.workflowStatus === "Processing" ? routes.examiner.processing(item.caseId) : routes.examiner.caseResult(item.caseId)
             }
@@ -146,7 +211,7 @@ export function ExaminerDashboard() {
           />
         </section>
 
-        <Panel title="Needs attention" description="Drafts, running analyses and unopened results" bodyClassName="p-0">
+        <Panel title="Needs attention" description="Drafts, analyses and new results" bodyClassName="p-0">
           {pending.length === 0 ? (
             <EmptyState compact title="You're all caught up" description="Drafts and new results will show up here." />
           ) : (
@@ -161,14 +226,12 @@ export function ExaminerDashboard() {
                       onClick={() => openPending(entry)}
                       className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-canvas"
                     >
-                      <span className={`flex size-9 shrink-0 items-center justify-center rounded-md ${meta.tone}`}>
+                      <span className={`flex size-9 shrink-0 items-center justify-center rounded-md ${meta.tile}`}>
                         <Icon className="size-4.25" aria-hidden />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="flex items-baseline gap-2">
-                          <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold text-ink">{entry.title}</span>
-                          <span className="shrink-0 text-[12px] font-medium text-ink-3">{meta.label}</span>
-                        </span>
+                        <span className={`block text-[11.5px] font-semibold ${meta.text}`}>{meta.label}</span>
+                        <span className="block truncate text-[13.5px] font-semibold text-ink">{entry.title}</span>
                         <span className="block truncate text-[12.5px] text-ink-3">{entry.detail}</span>
                       </span>
                     </button>

@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useMemo } from "react";
 
 import { PageHeader } from "@/components/ui/panel";
-import { CaseTable } from "@/features/cases/case-table";
+import { CaseTable, verdictFromParam } from "@/features/cases/case-table";
 import { useCases } from "@/hooks/use-cases";
 import { routes } from "@/lib/routes";
 import { useAdminStore } from "@/stores/admin";
@@ -42,13 +42,15 @@ export function AdminCases() {
         }
       />
       <CaseTable
+        // Remount when a dashboard link changes the filter on this same route.
+        key={params.get("filter") ?? "all"}
         cases={scoped}
         mode="admin"
         hrefFor={(item) => routes.admin.caseReview(item.caseId)}
         isLoading={isInitialLoading}
         error={error}
         onRetry={() => void reload()}
-        initialVerdict={params.get("filter") === "pending" ? "Pending" : "All"}
+        initialVerdict={verdictFromParam(params.get("filter"), "admin")}
       />
     </>
   );

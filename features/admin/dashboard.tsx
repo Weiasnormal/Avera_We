@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowRight, ClipboardClock, FolderOpen, ShieldAlert, Users } from "lucide-react";
+import { ArrowRight, IdCardLanyard, FolderOpen, ClipboardPen, Users } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/feedback/states";
 import { Avatar } from "@/components/ui/avatar";
@@ -12,6 +12,7 @@ import { StatCards, type StatCard } from "@/components/ui/stat-cards";
 import { CaseTable } from "@/features/cases/case-table";
 import { summarize } from "@/features/stats/compute";
 import { useCases } from "@/hooks/use-cases";
+import { formatRelativeTime } from "@/lib/format";
 import { routes } from "@/lib/routes";
 import { useAdminStore } from "@/stores/admin";
 import { useSessionStore } from "@/stores/session";
@@ -40,24 +41,78 @@ export function AdminDashboard() {
     [members],
   );
 
+  const oldestWaiting = awaitingReview.reduce<string | null>(
+    (oldest, item) => (!oldest || item.createdAt < oldest ? item.createdAt : oldest),
+    null,
+  );
+  const decided = summary.genuine + summary.suspected;
+  const [now] = useState(() => Date.now());
+  const casesThisWeek = useMemo(() => cases.filter((item) => new Date(item.createdAt).getTime() >= now - 7 * 86_400_000).length, [cases, now]);
+
+  // Same four figures, icons and order as the mobile admin home. Pending review is the admin's job, so it is
+  // the one tinted card. The examiner card carries the org's seat limit.
+  const seats =
+    tenant && tenant.memberCountLimit > 0
+      ? `${tenant.memberCount} of ${tenant.memberCountLimit} seats used`
+      : `${activeExaminers} of ${members.length} examiners`;
   const stats: StatCard[] = [
-    { label: "Awaiting review", value: summary.pendingReview, icon: ClipboardClock, tone: "pending", loading: isInitialLoading },
-    { label: "Total cases", value: summary.total, icon: FolderOpen, tone: "brand", loading: isInitialLoading },
-    { label: "Suspected", value: summary.suspected, icon: ShieldAlert, tone: "suspect", toneValue: true, loading: isInitialLoading },
-    { label: "Active examiners", value: activeExaminers, icon: Users, tone: "brand", loading: teamLoading && members.length === 0 },
+    {
+      label: "Active examiners",
+      value: activeExaminers,
+      meta: seats,
+      icon: Users,
+      tone: "brand",
+      href: routes.admin.team,
+      loading: teamLoading && members.length === 0,
+    },
+    {
+      label: "Total cases",
+      value: summary.total,
+      meta: `${casesThisWeek} this week`,
+      icon: FolderOpen,
+      tone: "brand",
+      href: routes.admin.cases,
+      loading: isInitialLoading,
+    },
+    {
+      label: "Pending review",
+      value: summary.pendingReview,
+      meta: oldestWaiting ? `Oldest waiting ${formatRelativeTime(oldestWaiting).replace(/ ago$/, "")}` : "Nothing waiting",
+      icon: IdCardLanyard,
+      tone: "pending",
+      hero: summary.pendingReview > 0,
+      href: `${routes.admin.cases}?filter=pending`,
+      loading: isInitialLoading,
+    },
+    {
+      label: "Suspected",
+      value: summary.suspected,
+      meta: decided ? `${Math.round((summary.suspected / decided) * 100)}% of verdicts` : undefined,
+      icon: ClipboardPen,
+      tone: "suspect",
+      href: `${routes.admin.cases}?filter=suspected`,
+      loading: isInitialLoading,
+    },
   ];
 
   return (
     <>
       <PageHeader
-        title={tenant?.name || profile?.organization || "Overview"}
-        description={profile?.firstName ? `Signed in as ${profile.firstName} ${profile.lastName} · Org Admin` : "Org Admin"}
+        title={profile?.firstName ? `Welcome back, ${profile.firstName}` : tenant?.name || profile?.organization || "Overview"}
+        description={
+          isInitialLoading
+            ? tenant?.name || profile?.organization || undefined
+            : summary.pendingReview
+              ? `${summary.pendingReview} case${summary.pendingReview === 1 ? " is" : "s are"} waiting for your review.`
+              : "No cases are waiting for review."
+        }
       />
 
       <StatCards className="mb-8" stats={stats} />
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <section>
+      {/* Four columns from xl: the side column is exactly one card wide, so its edges line up with the cards. */}
+      <div className="grid gap-5 xl:grid-cols-4">
+        <section className="min-w-0 xl:col-span-3">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-[16px] font-semibold">Pending review</h2>
             <Link href={`${routes.admin.cases}?filter=pending`} className="inline-flex items-center gap-1 text-[13px] font-semibold text-brand hover:underline">
@@ -69,6 +124,7 @@ export function AdminDashboard() {
             mode="admin"
             toolbar={false}
             limit={8}
+            dateColumn="waiting"
             hrefFor={(item) => routes.admin.caseReview(item.caseId)}
             isLoading={isInitialLoading}
             error={error}
@@ -76,7 +132,7 @@ export function AdminDashboard() {
           />
         </section>
 
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-5">
           <Panel
             title="Member requests"
             description={pending.length ? `${pending.length} waiting for approval` : undefined}
@@ -92,7 +148,16 @@ export function AdminDashboard() {
             <MemberRequests limit={3} compact />
           </Panel>
 
-          <Panel title="Team overview" description="Active examiners by cases handled" bodyClassName="p-0">
+          <Panel
+            title="Top examiners"
+            description="By cases handled"
+            bodyClassName="p-0"
+            actions={
+              <Link href={routes.admin.team} className="text-[13px] font-semibold text-brand hover:underline">
+                Manage
+              </Link>
+            }
+          >
             {topExaminers.length === 0 && teamLoading ? (
               <ul className="divide-y divide-line" aria-busy aria-label="Loading team">
                 {[0, 1, 2].map((row) => (
@@ -113,8 +178,8 @@ export function AdminDashboard() {
                       <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold text-ink">
                         {member.firstName} {member.lastName}
                       </span>
-                      <span className="text-[12.5px] text-ink-3 tabular">
-                        {member.casesHandled} case{member.casesHandled === 1 ? "" : "s"}
+                      <span className="text-[13px] font-semibold text-ink-2 tabular" title={`${member.casesHandled} cases handled`}>
+                        {member.casesHandled}
                       </span>
                     </Link>
                   </li>

@@ -7,9 +7,10 @@ import { useMemo, useState } from "react";
 import { EmptyState, LoadError } from "@/components/feedback/states";
 import { PriorityLabel, VerdictBadge, WorkflowBadge } from "@/components/ui/badge";
 import { Segmented } from "@/components/ui/controls";
+import { Select } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/spinner";
 import { cn } from "@/lib/cn";
-import { formatDate, formatPercent } from "@/lib/format";
+import { formatDate, formatPercent, formatRelativeTime } from "@/lib/format";
 import { caseMatchesSearch } from "@/stores/cases";
 import { PRIORITIES, type CaseSummary } from "@/types/case";
 
@@ -20,10 +21,18 @@ import { PRIORITIES, type CaseSummary } from "@/types/case";
 type Mode = "user" | "admin";
 type SortKey = "Newest first" | "Oldest first" | "Suspected first" | "Genuine first";
 const SORTS: SortKey[] = ["Newest first", "Oldest first", "Suspected first", "Genuine first"];
+const SORT_OPTIONS = SORTS.map((value) => ({ value, label: value }));
+const PRIORITY_OPTIONS = [{ value: "All", label: "All priorities" }, ...PRIORITIES.map((value) => ({ value: value as string, label: value }))];
 
 function verdictOptions(mode: Mode) {
   const values = mode === "admin" ? ["All", "Genuine", "Suspected", "Pending"] : ["All", "Genuine", "Suspected", "Processing"];
   return values.map((value) => ({ value, label: value }));
+}
+
+/** Maps a `?filter=` link (stat cards, dashboards) to the matching quick filter. */
+export function verdictFromParam(param: string | null, mode: Mode) {
+  const value = { genuine: "Genuine", suspected: "Suspected", pending: "Pending", processing: "Processing" }[param ?? ""];
+  return value && verdictOptions(mode).some((option) => option.value === value) ? value : "All";
 }
 
 function applyVerdict(item: CaseSummary, verdict: string, mode: Mode) {
@@ -71,6 +80,7 @@ export function CaseTable({
   initialVerdict = "All",
   limit,
   toolbar = true,
+  dateColumn = "created",
 }: {
   cases: CaseSummary[];
   mode: Mode;
@@ -81,6 +91,8 @@ export function CaseTable({
   initialVerdict?: string;
   limit?: number;
   toolbar?: boolean;
+  /** "waiting" shows how long each case has waited instead of its creation date (review queues). */
+  dateColumn?: "created" | "waiting";
 }) {
   const [query, setQuery] = useState("");
   const [verdict, setVerdict] = useState(initialVerdict);
@@ -122,29 +134,14 @@ export function CaseTable({
           </label>
           <div className="flex flex-wrap items-center gap-2">
             <Segmented label="Verdict" value={verdict} onChange={setVerdict} options={verdictOptions(mode)} />
-            <select
-              aria-label="Priority"
+            <Select
+              label="Priority"
               value={priority}
-              onChange={(event) => setPriority(event.target.value)}
-              className="h-10 rounded-md border border-line-strong bg-surface px-3 text-[13px] font-medium text-ink-2 outline-none focus:border-brand"
-            >
-              <option value="All">All priorities</option>
-              {PRIORITIES.map((value) => (
-                <option key={value} value={value}>
-                  {value}
-                </option>
-              ))}
-            </select>
-            <select
-              aria-label="Sort"
-              value={sort}
-              onChange={(event) => setSort(event.target.value as SortKey)}
-              className="h-10 rounded-md border border-line-strong bg-surface px-3 text-[13px] font-medium text-ink-2 outline-none focus:border-brand"
-            >
-              {SORTS.map((value) => (
-                <option key={value}>{value}</option>
-              ))}
-            </select>
+              onChange={setPriority}
+              options={PRIORITY_OPTIONS}
+              className="min-w-36"
+            />
+            <Select label="Sort" value={sort} onChange={setSort} options={SORT_OPTIONS} className="min-w-40" />
           </div>
         </div>
       ) : null}
@@ -183,7 +180,7 @@ export function CaseTable({
                 <th scope="col" className={cn("hidden px-3 py-2.5 font-semibold", columns.priority)}>Priority</th>
                 <th scope="col" className="px-3 py-2.5 font-semibold">Verdict</th>
                 {mode === "admin" ? <th scope="col" className={cn("hidden px-3 py-2.5 font-semibold", columns.review)}>Review</th> : null}
-                <th scope="col" className="px-3 py-2.5 text-right font-semibold">Created</th>
+                <th scope="col" className="px-3 py-2.5 text-right font-semibold">{dateColumn === "waiting" ? "Waiting" : "Created"}</th>
                 <th scope="col" className="w-11 pr-5"><span className="sr-only">Open</span></th>
               </tr>
             </thead>
@@ -228,7 +225,9 @@ export function CaseTable({
                         <WorkflowBadge status={item.workflowStatus} />
                       </td>
                     ) : null}
-                    <td className="ml-auto text-right whitespace-nowrap text-ink-3 tabular md:px-3">{formatDate(item.createdAt)}</td>
+                    <td className="ml-auto text-right whitespace-nowrap text-ink-3 tabular md:px-3" title={dateColumn === "waiting" ? formatDate(item.createdAt) : undefined}>
+                      {dateColumn === "waiting" ? formatRelativeTime(item.createdAt).replace(/ ago$/, "") : formatDate(item.createdAt)}
+                    </td>
                     <td className="hidden pr-5 text-ink-4 md:table-cell">
                       <ChevronRight className="size-4 transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden />
                     </td>

@@ -1,6 +1,10 @@
+"use client";
+
 import { ChevronDown } from "lucide-react";
+import { useId, useState } from "react";
 
 import { PageHeader } from "@/components/ui/panel";
+import { cn } from "@/lib/cn";
 
 // FAQ content from the mobile HelpSupportScreen files; only device-specific
 // wording (ML Kit scanning, "tap") was adapted for the web.
@@ -65,16 +69,60 @@ export function HelpPage({ role }: { role: "user" | "admin" }) {
     <>
       <PageHeader title="Help & support" description="Answers to common questions about Avera." />
       <div className="max-w-190 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface shadow-card">
-        {items.map((item) => (
-          <details key={item.question} className="group">
-            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-[14.5px] font-semibold text-ink hover:bg-canvas [&::-webkit-details-marker]:hidden">
-              {item.question}
-              <ChevronDown className="size-4 shrink-0 text-ink-3 transition-transform duration-200 group-open:rotate-180" aria-hidden />
-            </summary>
-            <p className="px-5 pb-5 text-[14px] leading-relaxed text-ink-2">{item.answer}</p>
-          </details>
+        {items.map((item, index) => (
+          <FaqItem key={item.question} question={item.question} answer={item.answer} defaultOpen={index === 0} />
         ))}
       </div>
     </>
+  );
+}
+
+/**
+ * One question. The answer opens by animating a grid row from 0fr to 1fr, which
+ * reaches its natural height without measuring it; collapsed content is inert so
+ * it stays out of the tab order and the accessibility tree.
+ */
+function FaqItem({ question, answer, defaultOpen }: { question: string; answer: string; defaultOpen?: boolean }) {
+  const id = useId();
+  const [open, setOpen] = useState(Boolean(defaultOpen));
+  return (
+    <div>
+      <h2>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls={`${id}-answer`}
+          onClick={() => setOpen((value) => !value)}
+          className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-[14.5px] font-semibold text-ink transition-colors duration-150 hover:bg-canvas"
+        >
+          {question}
+          <ChevronDown
+            aria-hidden
+            className={cn("size-4 shrink-0 text-ink-3 transition-transform duration-300 ease-[var(--ease-out)]", open && "rotate-180")}
+          />
+        </button>
+      </h2>
+      <div
+        id={`${id}-answer`}
+        role="region"
+        aria-label={question}
+        inert={!open}
+        className={cn(
+          "grid transition-[grid-template-rows] duration-300 ease-[var(--ease-out)]",
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+        )}
+      >
+        <div className="overflow-hidden">
+          <p
+            className={cn(
+              "px-5 pb-5 text-[14px] leading-relaxed text-ink-2 transition-[opacity,translate] duration-300 ease-[var(--ease-out)]",
+              open ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0",
+            )}
+          >
+            {answer}
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }

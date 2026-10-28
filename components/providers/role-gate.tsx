@@ -52,7 +52,7 @@ function ShellFallback() {
       <div className="flex h-16 items-center gap-2.5 border-b border-line px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-2.5 pl-11 lg:hidden">{brand}</div>
       </div>
-      <div className="mx-auto w-full max-w-320 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mx-auto w-full max-w-360 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         <Skeleton className="h-7 w-56" />
         <Skeleton className="mt-3 h-4 w-72 max-w-full" />
         <Skeleton className="mt-8 h-24 w-full rounded-lg" />
