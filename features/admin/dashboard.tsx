@@ -23,6 +23,7 @@ export function AdminDashboard() {
   const members = useAdminStore((state) => state.members);
   const pending = useAdminStore((state) => state.pending);
   const tenant = useAdminStore((state) => state.tenant);
+  const teamLoading = useAdminStore((state) => state.teamStatus === "idle" || state.teamStatus === "loading");
   const profile = useSessionStore((state) => state.profile);
 
   useEffect(() => {
@@ -38,11 +39,11 @@ export function AdminDashboard() {
     [members],
   );
 
-  const stats: { label: string; value: number; tone?: string }[] = [
-    { label: "Awaiting review", value: summary.pendingReview },
-    { label: "Total cases", value: summary.total },
-    { label: "Suspected", value: summary.suspected, tone: "text-suspect" },
-    { label: "Active examiners", value: activeExaminers },
+  const stats: { label: string; value: number; tone?: string; loading: boolean }[] = [
+    { label: "Awaiting review", value: summary.pendingReview, loading: isInitialLoading },
+    { label: "Total cases", value: summary.total, loading: isInitialLoading },
+    { label: "Suspected", value: summary.suspected, tone: "text-suspect", loading: isInitialLoading },
+    { label: "Active examiners", value: activeExaminers, loading: teamLoading && members.length === 0 },
   ];
 
   return (
@@ -60,7 +61,7 @@ export function AdminDashboard() {
           >
             <dt className="text-[12.5px] font-medium text-ink-3">{stat.label}</dt>
             <dd className={`mt-1 text-[22px] font-bold tabular ${stat.tone ?? "text-ink"}`}>
-              {isInitialLoading ? <Skeleton className="mt-1 h-6 w-10" /> : stat.value}
+              {stat.loading ? <Skeleton className="mt-1 h-6 w-10" /> : stat.value}
             </dd>
           </div>
         ))}
@@ -103,7 +104,16 @@ export function AdminDashboard() {
           </Panel>
 
           <Panel title="Team overview" description="Active examiners by cases handled" bodyClassName="p-0">
-            {topExaminers.length === 0 ? (
+            {topExaminers.length === 0 && teamLoading ? (
+              <ul className="divide-y divide-line" aria-busy aria-label="Loading team">
+                {[0, 1, 2].map((row) => (
+                  <li key={row} className="flex items-center gap-3 px-5 py-3">
+                    <Skeleton className="size-8 rounded-full" />
+                    <Skeleton className="h-3.5 w-36" />
+                  </li>
+                ))}
+              </ul>
+            ) : topExaminers.length === 0 ? (
               <EmptyState compact title="No active examiners yet" description="Share your invite code to add examiners." />
             ) : (
               <ul className="divide-y divide-line">

@@ -1,7 +1,9 @@
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { Suspense, type ReactNode } from "react";
 
 import { AppShell } from "@/components/navigation/app-shell";
+import { Skeleton } from "@/components/ui/spinner";
 import { homePathFor, onboardingPathFor, type AppRole } from "@/lib/routes";
 import { readSession } from "@/lib/server/session";
 
@@ -26,11 +28,35 @@ async function Gate({ role, children }: { role: AppRole; children: ReactNode }) 
   );
 }
 
+// Mirrors the AppShell frame (rail, brand, top bar, page heading) so the first
+// paint already looks like the app instead of an empty page while it loads.
 function ShellFallback() {
+  const brand = (
+    <>
+      <Image src="/brand/avera-icon.png" alt="" width={28} height={28} className="rounded-[7px]" priority />
+      <span className="text-[17px] font-bold tracking-[-0.01em] text-ink">Avera</span>
+    </>
+  );
   return (
-    <div className="min-h-dvh lg:pl-[248px]" aria-busy>
-      <div className="fixed inset-y-0 left-0 hidden w-62 border-r border-line bg-rail lg:block" />
-      <div className="h-16 border-b border-line" />
+    <div className="min-h-dvh lg:pl-[248px]" aria-busy aria-label="Loading Avera">
+      <div className="fixed inset-y-0 left-0 hidden w-62 border-r border-line bg-rail lg:block">
+        <div className="flex h-16 items-center gap-2.5 px-5">{brand}</div>
+        <div className="flex flex-col gap-3.5 px-5 pt-1">
+          <Skeleton className="h-3 w-36" />
+          <Skeleton className="mt-1 h-10 w-full rounded-md" />
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+      </div>
+      <div className="flex h-16 items-center gap-2.5 border-b border-line px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-2.5 pl-11 lg:hidden">{brand}</div>
+      </div>
+      <div className="mx-auto w-full max-w-320 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+        <Skeleton className="h-7 w-56" />
+        <Skeleton className="mt-3 h-4 w-72 max-w-full" />
+        <Skeleton className="mt-8 h-24 w-full rounded-lg" />
+      </div>
     </div>
   );
 }

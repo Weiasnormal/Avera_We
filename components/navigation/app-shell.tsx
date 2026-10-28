@@ -21,6 +21,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { ConfirmDialog } from "@/components/modals/confirm-dialog";
 import { resetUserState } from "@/components/providers/session-provider";
 import { Avatar } from "@/components/ui/avatar";
+import { Skeleton } from "@/components/ui/spinner";
 import { cn } from "@/lib/cn";
 import { routes } from "@/lib/routes";
 import { profilePictureUrl } from "@/services/auth";
@@ -126,9 +127,16 @@ export function AppShell({ role, children }: { role: "user" | "admin"; children:
       </div>
 
       <div className="px-3 pb-2 text-[12px] text-ink-3">
-        <p className="truncate px-2 font-medium text-ink-2" title={profile?.organization}>
-          {profile?.organization || (profile ? "Organization unavailable" : " ")}
-        </p>
+        {/* Fixed line height so the nav below doesn't jump when the profile arrives. */}
+        {profile ? (
+          <p className="h-[18px] truncate px-2 font-medium text-ink-2" title={profile.organization}>
+            {profile.organization || "Organization unavailable"}
+          </p>
+        ) : (
+          <div className="flex h-[18px] items-center px-2">
+            <Skeleton className="h-3 w-36" />
+          </div>
+        )}
       </div>
 
       {role === "user" ? (
@@ -211,7 +219,6 @@ export function AppShell({ role, children }: { role: "user" | "admin"; children:
           <span className="text-[15px] font-bold">Avera</span>
         </Link>
         <div className="ml-auto flex items-center gap-1">
-          {role === "user" ? <NewAnalysisButton size="sm" className="hidden sm:inline-flex lg:hidden" /> : null}
           <NotificationBell />
         </div>
       </header>

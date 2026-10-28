@@ -10,7 +10,7 @@ export function ExaminerCases() {
   const { cases, error, reload, isInitialLoading } = useCases();
   return (
     <>
-      <PageHeader title="Cases" description="Every signature analysis you have submitted." actions={<NewAnalysisButton />} />
+      <PageHeader title="Cases" description="Every signature analysis you have submitted." actions={<NewAnalysisButton className="lg:hidden" />} />
       <CaseTable
         cases={cases}
         mode="user"

@@ -103,7 +103,7 @@ export function ExaminerDashboard() {
       <PageHeader
         title={profile?.firstName ? `Welcome back, ${profile.firstName}` : "Dashboard"}
         description={profile?.organization || undefined}
-        actions={<NewAnalysisButton />}
+        actions={<NewAnalysisButton className="lg:hidden" />}
       />
 
       {reached ? (
@@ -172,10 +172,12 @@ export function ExaminerDashboard() {
                         <Icon className="size-4.25" aria-hidden />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[13.5px] font-semibold text-ink">{entry.title}</span>
+                        <span className="flex items-baseline gap-2">
+                          <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold text-ink">{entry.title}</span>
+                          <span className="shrink-0 text-[12px] font-medium text-ink-3">{meta.label}</span>
+                        </span>
                         <span className="block truncate text-[12.5px] text-ink-3">{entry.detail}</span>
                       </span>
-                      <span className="text-[12px] font-medium text-ink-3">{meta.label}</span>
                     </button>
                   </li>
                 );
