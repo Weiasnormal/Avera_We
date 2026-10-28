@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { SelectField, TextField } from "@/components/ui/field";
 import { PageHeader, Panel } from "@/components/ui/panel";
-import { Spinner } from "@/components/ui/spinner";
+import { LoadingState } from "@/components/ui/avera-loader";
 import { cn } from "@/lib/cn";
 import { ImageValidationError, validateImageFile } from "@/lib/image";
 import { readPreference, writePreference } from "@/lib/preferences";
@@ -175,10 +175,7 @@ export function NewAnalysis() {
   // until the processing page replaces this one.
   if (submitting && !hasCompleteUploads(draft)) {
     return (
-      <div className="flex min-h-[50dvh] flex-col items-center justify-center gap-3 text-ink-3" aria-live="polite">
-        <Spinner className="size-6 text-brand" />
-        <p className="text-[14px] font-medium">Creating case…</p>
-      </div>
+      <LoadingState label="Creating case…" className="min-h-[50dvh]" />
     );
   }
 

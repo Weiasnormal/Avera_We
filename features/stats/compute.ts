@@ -48,8 +48,12 @@ export function monthlyBuckets(cases: CaseSummary[], months = 6): Bucket[] {
   return buckets.map(({ label, genuine, suspected }) => ({ label, genuine, suspected }));
 }
 
-/** "↑ 20% vs last month" (mobile monthlyTrendLabel). */
-export function monthlyTrendLabel(cases: CaseSummary[]) {
+export type Trend =
+  | { kind: "up" | "down"; percent: number; label: string }
+  | { kind: "new" | "flat"; label: string };
+
+/** Month-over-month change in case count (mobile monthlyTrendLabel). */
+export function monthlyTrend(cases: CaseSummary[]): Trend {
   const now = new Date();
   const countFor = (offset: number) => {
     const month = new Date(now.getFullYear(), now.getMonth() - offset, 1);
@@ -60,9 +64,12 @@ export function monthlyTrendLabel(cases: CaseSummary[]) {
   };
   const current = countFor(0);
   const previous = countFor(1);
-  if (previous === 0) return current > 0 ? "New this month" : "No change from last month";
+  if (previous === 0) {
+    return current > 0 ? { kind: "new", label: "New this month" } : { kind: "flat", label: "No change from last month" };
+  }
   const change = Math.round(((current - previous) / previous) * 100);
-  return `${change >= 0 ? "↑" : "↓"} ${Math.abs(change)}% vs last month`;
+  if (change === 0) return { kind: "flat", label: "No change from last month" };
+  return { kind: change > 0 ? "up" : "down", percent: Math.abs(change), label: `${Math.abs(change)}% vs last month` };
 }
 
 // --- Admin time ranges (mobile admin_stats) ---------------------------------

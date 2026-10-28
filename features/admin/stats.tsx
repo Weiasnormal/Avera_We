@@ -81,7 +81,7 @@ export function AdminStats() {
           <EmptyState illustration="/illustrations/emptydash.webp" title="No statistics yet" description="Statistics appear once your examiners analyze cases." />
         </Panel>
       ) : (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
+        <div className="stagger-in grid gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
           <Panel
             title="Case trend"
             actions={

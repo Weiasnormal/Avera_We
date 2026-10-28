@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { Button, ButtonLink } from "@/components/ui/button";
 import { PageHeader, Panel } from "@/components/ui/panel";
+import { LoadingState } from "@/components/ui/avera-loader";
 import { IndeterminateBar, Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/cn";
 import { routes } from "@/lib/routes";
@@ -104,9 +105,7 @@ export function Processing({ caseId }: { caseId: string }) {
         <PageHeader title="Case processing" />
         <Panel className="max-w-160">
           {orphan.status === "checking" ? (
-            <div className="flex items-center gap-3 text-ink-3">
-              <Spinner /> Checking the case status…
-            </div>
+            <LoadingState label="Checking the case status…" className="py-6" />
           ) : orphan.status === "error" ? (
             <div className="flex flex-col items-start gap-4">
               <p className="text-[14px] text-danger">{orphan.message}</p>

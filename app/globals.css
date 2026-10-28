@@ -40,6 +40,10 @@
 
   --color-pending: #ea7317;
 
+  /* Chart marks (statistics). Saturated for the current period, tinted for the past. */
+  --color-chart-genuine: #16a34a;
+  --color-chart-suspected: #e24b4a;
+
   --color-danger: #d93a39;
   --color-danger-soft: #fef2f2;
 
@@ -98,6 +102,37 @@
 @keyframes shimmer {
   50% {
     opacity: 0.55;
+  }
+}
+
+/* Chart columns grow up from the baseline. */
+@keyframes bar-grow {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+/* Meters sweep in left to right; clip-path keeps rounded ends undistorted. */
+@keyframes reveal-x {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* Avera loader: the A strokes draw on, hold, then draw off. */
+@keyframes avera-draw {
+  0% {
+    stroke-dashoffset: 1;
+  }
+  45%,
+  60% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -1;
   }
 }
 
@@ -170,6 +205,27 @@
     transform: scale(0.97);
   }
 
+  /* Sections rise in one after another on first paint. Decorative only:
+     never delays interaction, and capped so long pages don't drag. */
+  .stagger-in > * {
+    animation: rise-in 360ms var(--ease-out) both;
+  }
+  .stagger-in > :nth-child(2) {
+    animation-delay: 60ms;
+  }
+  .stagger-in > :nth-child(3) {
+    animation-delay: 120ms;
+  }
+  .stagger-in > :nth-child(n + 4) {
+    animation-delay: 180ms;
+  }
+
+  .avera-loader-stroke {
+    stroke-dasharray: 1 1;
+    stroke-dashoffset: 1;
+    animation: avera-draw 1.5s var(--ease-in-out) infinite;
+  }
+
   .skeleton {
     background: var(--color-sunken);
     border-radius: var(--radius-sm);
@@ -200,5 +256,13 @@
     animation-duration: 1ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
+  }
+
+  /* The draw cycle ends on an empty stroke; show the full mark and breathe instead. */
+  .avera-loader-stroke {
+    animation-name: shimmer !important;
+    animation-duration: 1.4s !important;
+    animation-iteration-count: infinite !important;
+    stroke-dashoffset: 0;
   }
 }

@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Alert } from "@/components/feedback/states";
 import { Button, ButtonLink } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
+import { AveraLoader } from "@/components/ui/avera-loader";
 import { useCooldown } from "@/hooks/use-cooldown";
 import * as authApi from "@/services/auth";
 import { toast } from "@/stores/toast";
@@ -72,8 +72,8 @@ export function VerifyEmail() {
 
   if (linkState === "verifying") {
     return (
-      <div className="flex flex-col items-center py-10 text-center" aria-live="polite">
-        <Spinner className="size-7 text-brand" />
+      <div className="flex flex-col items-center py-10 text-center animate-fade-in" aria-live="polite">
+        <AveraLoader className="size-11" />
         <p className="mt-4 text-[15px] font-semibold">Verifying your email…</p>
       </div>
     );

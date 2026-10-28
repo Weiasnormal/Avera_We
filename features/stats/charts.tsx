@@ -1,16 +1,21 @@
 "use client";
 
+import { ArrowDownRight, ArrowUpRight } from "lucide-react";
 import { useState } from "react";
 
 import { cn } from "@/lib/cn";
+import type { Trend } from "./compute";
 
-// Chart marks for case statistics. Genuine / Suspected colors are lightness-
-// separated (validated: CVD ΔE 14.2) so the pair survives color-vision
-// deficiency; identity is also carried by the legend and table view.
+// Chart marks for case statistics. Identity is also carried by the legend,
+// tooltip and table view, so color is never the only cue.
 export const SERIES = {
-  genuine: { label: "Genuine", color: "#1e7a4c" },
-  suspected: { label: "Suspected", color: "#ec8a86" },
+  genuine: { label: "Genuine", color: "var(--color-chart-genuine)" },
+  suspected: { label: "Suspected", color: "var(--color-chart-suspected)" },
 } as const;
+
+// Past periods recede so the current one carries the eye.
+const PAST_OPACITY = 0.3;
+const STAGGER_MS = 45;
 
 export interface Bucket {
   label: string;
@@ -18,12 +23,16 @@ export interface Bucket {
   suspected: number;
 }
 
+function Swatch({ color, className }: { color: string; className?: string }) {
+  return <span aria-hidden className={cn("size-2.5 shrink-0 rounded-[3px]", className)} style={{ backgroundColor: color }} />;
+}
+
 function Legend() {
   return (
-    <div className="flex items-center gap-4 text-[12.5px] text-ink-2">
+    <div className="flex items-center gap-4 text-[12.5px] font-medium text-ink-2">
       {Object.values(SERIES).map((series) => (
         <span key={series.label} className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="size-2.5 rounded-[3px]" style={{ backgroundColor: series.color }} />
+          <Swatch color={series.color} />
           {series.label}
         </span>
       ))}
@@ -31,24 +40,34 @@ function Legend() {
   );
 }
 
-/** Stacked columns of genuine (bottom) and suspected (top) cases per period. */
+/** Pill showing month-over-month change; green when volume grows. */
+export function TrendBadge({ trend }: { trend: Trend }) {
+  const tone =
+    trend.kind === "up" || trend.kind === "new"
+      ? "bg-genuine-soft text-genuine"
+      : trend.kind === "down"
+        ? "bg-suspect-soft text-suspect"
+        : "bg-sunken text-ink-3";
+  const Icon = trend.kind === "up" ? ArrowUpRight : trend.kind === "down" ? ArrowDownRight : null;
+  return (
+    <span className={cn("inline-flex items-center gap-1 rounded-full px-3 py-1 text-[12.5px] font-semibold tabular animate-fade-in", tone)}>
+      {Icon ? <Icon aria-hidden className="size-3.5" strokeWidth={2.5} /> : null}
+      {trend.label}
+    </span>
+  );
+}
+
+/** Stacked columns of genuine (bottom) and suspected (top) cases per period; the last period is highlighted. */
 export function StackedColumns({ buckets, caption }: { buckets: Bucket[]; caption: string }) {
   const [hover, setHover] = useState<number | null>(null);
   const [asTable, setAsTable] = useState(false);
   const max = Math.max(1, ...buckets.map((bucket) => bucket.genuine + bucket.suspected));
-  const ticks = [max, Math.round(max / 2), 0].filter((value, index, all) => all.indexOf(value) === index);
+  const current = buckets.length - 1;
 
   return (
     <figure>
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <Legend />
-        <button type="button" onClick={() => setAsTable((value) => !value)} className="text-[12.5px] font-semibold text-brand hover:underline">
-          {asTable ? "View as chart" : "View as table"}
-        </button>
-      </div>
-
       {asTable ? (
-        <table className="w-full text-[13px]">
+        <table className="w-full text-[13px] animate-fade-in">
           <caption className="sr-only">{caption}</caption>
           <thead className="text-left text-[12px] text-ink-3">
             <tr className="border-b border-line">
@@ -70,66 +89,72 @@ export function StackedColumns({ buckets, caption }: { buckets: Bucket[]; captio
           </tbody>
         </table>
       ) : (
-        <div className="relative flex gap-3">
-          <div aria-hidden className="flex h-48 flex-col justify-between pb-6 text-right text-[11px] text-ink-4 tabular">
-            {ticks.map((tick) => (
-              <span key={tick} className="-translate-y-1/2 leading-none">
-                {tick}
-              </span>
-            ))}
-          </div>
-          <div className="relative flex-1">
-            <div aria-hidden className="absolute inset-x-0 top-0 bottom-6 flex flex-col justify-between">
-              {ticks.map((tick) => (
-                <span key={tick} className={cn("h-px", tick === 0 ? "bg-line-strong" : "bg-line")} />
-              ))}
-            </div>
-            <div role="img" aria-label={caption} className="relative flex h-48 items-stretch gap-2 sm:gap-3">
-              {buckets.map((bucket, index) => {
-                const total = bucket.genuine + bucket.suspected;
-                const active = hover === index;
-                return (
+        <div role="img" aria-label={caption} className="flex h-52 items-stretch gap-2.5 sm:gap-4">
+          {buckets.map((bucket, index) => {
+            const total = bucket.genuine + bucket.suspected;
+            const emphasized = hover === null ? index === current : hover === index;
+            return (
+              <div
+                key={bucket.label}
+                className="relative flex min-w-0 flex-1 flex-col items-center"
+                onPointerEnter={() => setHover(index)}
+                onPointerLeave={() => setHover(null)}
+              >
+                <div className="flex w-full flex-1 flex-col justify-end">
                   <div
-                    key={bucket.label}
-                    className="group relative flex flex-1 flex-col items-center"
-                    onPointerEnter={() => setHover(index)}
-                    onPointerLeave={() => setHover(null)}
+                    className="mx-auto flex w-full max-w-24 origin-bottom flex-col gap-0.75 transition-opacity duration-200 ease-out animate-[bar-grow_520ms_var(--ease-out)_both]"
+                    style={{
+                      height: total ? `${Math.max((total / max) * 100, 4)}%` : 0,
+                      opacity: emphasized ? 1 : PAST_OPACITY,
+                      animationDelay: `${index * STAGGER_MS}ms`,
+                    }}
                   >
-                    <div className="flex w-full flex-1 flex-col justify-end pb-px">
-                      <div className="mx-auto flex w-full max-w-10 flex-col gap-0.5" style={{ height: `${(total / max) * 100}%` }}>
-                        {bucket.suspected > 0 ? (
-                          <div
-                            className="rounded-t-[4px]"
-                            style={{ flexGrow: bucket.suspected, backgroundColor: SERIES.suspected.color, opacity: hover === null || active ? 1 : 0.55 }}
-                          />
-                        ) : null}
-                        {bucket.genuine > 0 ? (
-                          <div
-                            className={cn(bucket.suspected > 0 ? "" : "rounded-t-[4px]")}
-                            style={{ flexGrow: bucket.genuine, backgroundColor: SERIES.genuine.color, opacity: hover === null || active ? 1 : 0.55 }}
-                          />
-                        ) : null}
-                      </div>
-                    </div>
-                    <span className="mt-2 h-4 truncate text-[11.5px] text-ink-3">{bucket.label}</span>
-                    {active ? (
-                      <div className="pointer-events-none absolute bottom-full z-10 mb-1 w-max rounded-md border border-line bg-surface px-3 py-2 text-[12px] shadow-pop animate-fade-in">
-                        <p className="mb-1 font-semibold text-ink">{bucket.label}</p>
-                        <p className="flex items-center gap-1.5 text-ink-2 tabular">
-                          <span className="size-2 rounded-xs" style={{ backgroundColor: SERIES.genuine.color }} /> Genuine {bucket.genuine}
-                        </p>
-                        <p className="flex items-center gap-1.5 text-ink-2 tabular">
-                          <span className="size-2 rounded-xs" style={{ backgroundColor: SERIES.suspected.color }} /> Suspected {bucket.suspected}
-                        </p>
-                      </div>
+                    {bucket.suspected > 0 ? (
+                      <div className="min-h-1 rounded-t-sm rounded-b-[3px]" style={{ flexGrow: bucket.suspected, backgroundColor: SERIES.suspected.color }} />
+                    ) : null}
+                    {bucket.genuine > 0 ? (
+                      <div
+                        className={cn("min-h-1 rounded-b-[3px]", bucket.suspected > 0 ? "rounded-t-[3px]" : "rounded-t-sm")}
+                        style={{ flexGrow: bucket.genuine, backgroundColor: SERIES.genuine.color }}
+                      />
                     ) : null}
                   </div>
-                );
-              })}
-            </div>
-          </div>
+                </div>
+                <span
+                  className={cn(
+                    "mt-2.5 h-4 max-w-full truncate text-[12px] transition-colors duration-200",
+                    emphasized ? "font-semibold text-ink-2" : "text-ink-4",
+                  )}
+                >
+                  {bucket.label}
+                </span>
+                {hover === index ? (
+                  <div className="pointer-events-none absolute bottom-full z-10 mb-1 w-max rounded-md border border-line bg-surface px-3 py-2 text-[12px] shadow-pop animate-rise-in">
+                    <p className="mb-1 font-semibold text-ink">{bucket.label}</p>
+                    <p className="flex items-center gap-1.5 text-ink-2 tabular">
+                      <Swatch color={SERIES.genuine.color} className="size-2" /> Genuine {bucket.genuine}
+                    </p>
+                    <p className="flex items-center gap-1.5 text-ink-2 tabular">
+                      <Swatch color={SERIES.suspected.color} className="size-2" /> Suspected {bucket.suspected}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       )}
+
+      <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+        <Legend />
+        <button
+          type="button"
+          onClick={() => setAsTable((value) => !value)}
+          className="pressable rounded-sm text-[12.5px] font-semibold text-brand hover:underline"
+        >
+          {asTable ? "View as chart" : "View as table"}
+        </button>
+      </div>
     </figure>
   );
 }
@@ -140,13 +165,13 @@ export function BarList({ items, emptyLabel = "No data yet" }: { items: { label:
   if (items.length === 0) return <p className="py-6 text-center text-[13px] text-ink-3">{emptyLabel}</p>;
   return (
     <ul className="flex flex-col gap-3">
-      {items.map((item) => (
+      {items.map((item, index) => (
         <li key={item.label} className="grid grid-cols-[minmax(0,9rem)_1fr_2.5rem] items-center gap-3 text-[13px]">
           <span className="truncate text-ink-2">{item.label}</span>
           <span className="h-2 overflow-hidden rounded-full bg-sunken">
             <span
-              className="block h-full rounded-full bg-brand transition-[width] duration-500 ease-out"
-              style={{ width: `${(item.count / max) * 100}%` }}
+              className="block h-full rounded-full bg-brand transition-[width] duration-500 ease-out animate-[reveal-x_640ms_var(--ease-out)_both]"
+              style={{ width: `${(item.count / max) * 100}%`, animationDelay: `${120 + index * STAGGER_MS}ms` }}
             />
           </span>
           <span className="text-right font-semibold text-ink tabular">{item.count}</span>
@@ -162,18 +187,18 @@ export function VerdictSplit({ genuine, suspected }: { genuine: number; suspecte
   const genuinePct = total ? Math.round((genuine / total) * 100) : 0;
   return (
     <div>
-      <div className="flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-sunken">
-        {genuine > 0 ? <span style={{ flexGrow: genuine, backgroundColor: SERIES.genuine.color }} /> : null}
-        {suspected > 0 ? <span style={{ flexGrow: suspected, backgroundColor: SERIES.suspected.color }} /> : null}
+      <div className="flex h-2.5 gap-0.75 overflow-hidden rounded-full bg-sunken animate-[reveal-x_720ms_var(--ease-out)_both] [animation-delay:80ms]">
+        {genuine > 0 ? <span className="rounded-full" style={{ flexGrow: genuine, backgroundColor: SERIES.genuine.color }} /> : null}
+        {suspected > 0 ? <span className="rounded-full" style={{ flexGrow: suspected, backgroundColor: SERIES.suspected.color }} /> : null}
       </div>
       <div className="mt-3 flex justify-between text-[13px]">
         <span className="flex items-center gap-1.5 text-ink-2">
-          <span aria-hidden className="size-2.5 rounded-[3px]" style={{ backgroundColor: SERIES.genuine.color }} />
+          <Swatch color={SERIES.genuine.color} />
           Genuine <strong className="text-ink tabular">{genuine}</strong>
           <span className="text-ink-3 tabular">({total ? genuinePct : 0}%)</span>
         </span>
         <span className="flex items-center gap-1.5 text-ink-2">
-          <span aria-hidden className="size-2.5 rounded-[3px]" style={{ backgroundColor: SERIES.suspected.color }} />
+          <Swatch color={SERIES.suspected.color} />
           Suspected <strong className="text-ink tabular">{suspected}</strong>
           <span className="text-ink-3 tabular">({total ? 100 - genuinePct : 0}%)</span>
         </span>
