@@ -5,6 +5,8 @@ import { useId, useState, type ComponentProps, type ReactNode } from "react";
 
 import { cn } from "@/lib/cn";
 
+import { Select } from "./select";
+
 const CONTROL =
   "w-full rounded-md border bg-surface px-3 text-sm text-ink placeholder:text-ink-4 " +
   "transition-[border-color,box-shadow] duration-150 outline-none " +
@@ -126,32 +128,31 @@ export function TextAreaField({ label, error, hint, optional, trailing, classNam
   );
 }
 
-interface SelectFieldProps extends Omit<ComponentProps<"select">, "id"> {
+interface SelectFieldProps<T extends string> {
   label: string;
+  value: T;
+  options: readonly T[];
+  onChange: (value: T) => void;
   error?: string;
-  options: readonly string[];
+  disabled?: boolean;
+  className?: string;
 }
 
-export function SelectField({ label, error, options, className, ...props }: SelectFieldProps) {
+/** Labeled form dropdown on the shared custom Select (native popups can't be styled). */
+export function SelectField<T extends string>({ label, value, options, onChange, error, disabled, className }: SelectFieldProps<T>) {
   const fieldId = useId();
   return (
     <FieldShell label={label} htmlFor={fieldId} error={error} className={className}>
-      <select
+      <Select
         id={fieldId}
-        className={cn(
-          CONTROL,
-          "h-10 appearance-none bg-[length:16px] bg-[right_10px_center] bg-no-repeat pr-9",
-          "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")]",
-          borderFor(error),
-        )}
-        {...props}
-      >
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
+        variant="field"
+        value={value}
+        options={options.map((option) => ({ value: option, label: option }))}
+        onChange={onChange}
+        invalid={Boolean(error)}
+        describedBy={error ? `${fieldId}-error` : undefined}
+        disabled={disabled}
+      />
     </FieldShell>
   );
 }

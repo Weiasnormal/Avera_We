@@ -47,6 +47,8 @@ export interface ProcessingJob {
   uploadsComplete: boolean;
   result: AnalysisRunResult | null;
   startedAt: number;
+  /** When the ML request started; drives the stage timeline on the processing screen. */
+  analysisStartedAt: number | null;
   finishedAt: number | null;
 }
 
@@ -120,7 +122,13 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => {
 
   async function analyze(caseId: string) {
     const job = get().jobs[caseId];
-    updateJob(caseId, { status: "submitting", step: "Running AI forensic comparison", progress: 70, error: null });
+    updateJob(caseId, {
+      status: "submitting",
+      step: "Running AI forensic comparison",
+      progress: 70,
+      error: null,
+      analysisStartedAt: Date.now(),
+    });
     const result = await runAnalysis(caseId);
     if (!result.verdict) throw new Error("Analysis did not return a valid verdict.");
 
@@ -248,6 +256,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => {
             uploadsComplete: false,
             result: null,
             startedAt: Date.now(),
+            analysisStartedAt: null,
             finishedAt: null,
           },
         },
@@ -296,6 +305,7 @@ export const useAnalysisStore = create<AnalysisStore>((set, get) => {
               uploadsComplete: true,
               result: null,
               startedAt: Date.now(),
+              analysisStartedAt: null,
               finishedAt: null,
             },
           },

@@ -1,8 +1,8 @@
 "use client";
 
-import { ArrowLeft, Check, Info } from "lucide-react";
+import { ArrowLeft, Check, Info, LayoutGrid } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Alert } from "@/components/feedback/states";
 import { ConfirmDialog, NoticeDialog } from "@/components/modals/confirm-dialog";
@@ -14,7 +14,7 @@ import { SelectField, TextField } from "@/components/ui/field";
 import { PageHeader, Panel } from "@/components/ui/panel";
 import { LoadingState } from "@/components/ui/avera-loader";
 import { cn } from "@/lib/cn";
-import { ImageValidationError, validateImageFile } from "@/lib/image";
+import { ACCEPTED_IMAGE_EXTENSIONS, ImageValidationError, validateImageFile } from "@/lib/image";
 import { readPreference, writePreference } from "@/lib/preferences";
 import { routes } from "@/lib/routes";
 import {
@@ -28,6 +28,7 @@ import { DOCUMENT_TYPES, PRIORITIES, type AnalysisPriority, type DocumentType } 
 
 import { CropDialog } from "./crop-dialog";
 import { CropGuideDialog } from "./crop-guide";
+import { MultiCropDialog, type MultiCropResult } from "./multi-crop-dialog";
 import { UploadSlot } from "./upload-slot";
 
 type Step = 1 | 2;
@@ -85,6 +86,8 @@ export function NewAnalysis() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [guideAgain, setGuideAgain] = useState(true);
+  const [multiFile, setMultiFile] = useState<File | null>(null);
+  const multiInputRef = useRef<HTMLInputElement>(null);
 
   const referencesComplete = draft.references.every(Boolean);
   const detailsValid = hasValidDetails(draft);
@@ -150,6 +153,28 @@ export function NewAnalysis() {
     setPendingRemoval(null);
   };
 
+  const selectMultiFile = (file: File) => {
+    try {
+      validateImageFile(file);
+      setMultiFile(file);
+    } catch (error) {
+      setNotice({
+        title: "Image not accepted",
+        message: error instanceof ImageValidationError ? error.message : "This file could not be used.",
+      });
+    }
+  };
+
+  const onMultiCropped = ({ references, suspect }: MultiCropResult) => {
+    const sourceName = multiFile?.name ?? "Cropped image";
+    const toImage = (blob: Blob) => ({ blob, previewUrl: URL.createObjectURL(blob), sourceName });
+    references.forEach((blob, index) => setImage("reference", index, toImage(blob)));
+    if (suspect) setImage("suspect", 0, toImage(suspect));
+    setMultiFile(null);
+    const count = references.length + (suspect ? 1 : 0);
+    toast.success(`${count} ${count === 1 ? "signature" : "signatures"} added`);
+  };
+
   const submit = async () => {
     if (!canSubmit) return;
     if (reached) {
@@ -171,6 +196,9 @@ export function NewAnalysis() {
     else router.push(routes.examiner.dashboard);
   };
 
+  // One back control: step 2 returns to the details, step 1 leaves the flow.
+  const back = () => (step === 2 ? setStep(1) : leave());
+
   // After submit the draft is handed to the processing job; hold a neutral state
   // until the processing page replaces this one.
   if (submitting && !hasCompleteUploads(draft)) {
@@ -186,8 +214,13 @@ export function NewAnalysis() {
     <>
       <PageHeader
         back={
-          <button type="button" onClick={leave} className="inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-3 hover:text-ink">
-            <ArrowLeft className="size-4" /> Back
+          <button
+            type="button"
+            onClick={back}
+            disabled={submitting}
+            className="pressable -ml-2 inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[13px] font-medium text-ink-3 hover:bg-sunken hover:text-ink"
+          >
+            <ArrowLeft className="size-4" /> {step === 2 ? "Back to details" : "Back"}
           </button>
         }
         title="New analysis"
@@ -220,14 +253,11 @@ export function NewAnalysis() {
               maxLength={120}
             />
             <div className="grid gap-5 sm:grid-cols-2">
-              <SelectField
+              <SelectField<DocumentType>
                 label="Document type"
                 value={draft.documentType}
                 options={DOCUMENT_TYPES}
-                onChange={(event) => {
-                  const documentType = event.target.value as DocumentType;
-                  updateDraft({ documentType, ...(documentType !== "Other" ? { otherDocumentType: "" } : {}) });
-                }}
+                onChange={(documentType) => updateDraft({ documentType, ...(documentType !== "Other" ? { otherDocumentType: "" } : {}) })}
               />
               {draft.documentType === "Other" ? (
                 <TextField
@@ -287,9 +317,33 @@ export function NewAnalysis() {
             title="Reference signatures"
             description="Add 4 known-genuine samples of the subject's signature"
             actions={
-              <Button size="sm" variant="ghost" icon={<Info className="size-4" />} onClick={() => setGuideOpen(true)}>
-                Cropping tips
-              </Button>
+              <>
+                <Button size="sm" variant="ghost" icon={<Info className="size-4" />} onClick={() => setGuideOpen(true)}>
+                  Cropping tips
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  icon={<LayoutGrid className="size-4" />}
+                  onClick={() => multiInputRef.current?.click()}
+                  disabled={submitting}
+                >
+                  Crop several from one image
+                </Button>
+                <input
+                  ref={multiInputRef}
+                  type="file"
+                  accept={ACCEPTED_IMAGE_EXTENSIONS}
+                  className="sr-only"
+                  tabIndex={-1}
+                  aria-hidden
+                  onChange={(event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (file) selectMultiFile(file);
+                  }}
+                />
+              </>
             }
           >
             <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -329,10 +383,7 @@ export function NewAnalysis() {
           </Panel>
 
           <div className="sticky bottom-0 -mx-4 flex flex-col-reverse gap-3 border-t border-line bg-canvas/95 px-4 py-4 backdrop-blur-sm sm:-mx-6 sm:flex-row sm:items-center sm:px-6 lg:-mx-8 lg:px-8">
-            <Button variant="secondary" onClick={() => setStep(1)} disabled={submitting}>
-              Back to details
-            </Button>
-            <p className="text-[12.5px] text-ink-3 sm:mr-auto sm:ml-3 tabular">
+            <p className="text-[12.5px] text-ink-3 sm:mr-auto tabular">
               {draft.references.filter(Boolean).length + (draft.suspect ? 1 : 0)} of 5 images added · PNG, JPEG or WebP, up to 15 MB
             </p>
             <Button size="lg" onClick={() => void submit()} disabled={!canSubmit} loading={submitting}>
@@ -348,6 +399,7 @@ export function NewAnalysis() {
         onCancel={() => setCropTarget(null)}
         onComplete={onCropped}
       />
+      <MultiCropDialog file={multiFile} onCancel={() => setMultiFile(null)} onComplete={onMultiCropped} />
       <CropGuideDialog open={guideOpen} showAgain={guideAgain} onShowAgainChange={setGuideAgain} onClose={closeGuide} />
       <ImageViewer src={preview?.src ?? null} title={preview?.title ?? ""} onClose={() => setPreview(null)} />
       <NoticeDialog

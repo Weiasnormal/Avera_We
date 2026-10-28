@@ -141,7 +141,7 @@ export function AppShell({ role, children }: { role: "user" | "admin"; children:
 
       {role === "user" ? (
         <div className="px-3 pb-4 pt-1">
-          <NewAnalysisButton className="w-full" onNavigate={onNavigate} />
+          <NewAnalysisButton variant="card" size="sm" onNavigate={onNavigate} />
         </div>
       ) : null}
 

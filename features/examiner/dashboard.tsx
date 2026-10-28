@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, CalendarPlus, FileClock, FilePen, FileSearch, FolderOpen, LoaderCircle, CircleAlert, CircleCheck } from "lucide-react";
+import { ArrowRight, CalendarPlus, FileClock, FilePen, FileSearch, FolderOpen, CircleAlert, CircleCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
@@ -124,8 +124,10 @@ export function ExaminerDashboard() {
       <PageHeader
         title={profile?.firstName ? `Welcome back, ${profile.firstName}` : "Dashboard"}
         description={isInitialLoading ? profile?.organization || undefined : attentionSummary(pending)}
-        actions={<NewAnalysisButton className="lg:hidden" />}
       />
+
+      {/* The sidebar carries this tile on desktop. */}
+      <NewAnalysisButton variant="card" className="mb-6 lg:hidden" />
 
       {reached ? (
         <Alert tone="caution" className="mb-6" title="Daily case limit reached">
@@ -180,7 +182,7 @@ export function ExaminerDashboard() {
             : {
                 label: "Processing",
                 value: summary.processing,
-                icon: LoaderCircle,
+                icon: FileClock,
                 tone: "brand",
                 href: `${routes.examiner.cases}?filter=processing`,
                 loading: isInitialLoading,

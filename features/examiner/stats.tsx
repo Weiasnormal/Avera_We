@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderOpen, LoaderCircle, CircleAlert, CircleCheck } from "lucide-react";
+import { FolderOpen, FileClock, CircleAlert, CircleCheck } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { EmptyState, LoadError } from "@/components/feedback/states";
@@ -43,7 +43,7 @@ export function ExaminerStats() {
           { label: "Cases", value: summary.total, meta: monthOverMonth.label, icon: FolderOpen, tone: "brand", loading: isInitialLoading },
           { label: "Genuine", value: summary.genuine, meta: share(summary.genuine, decided), icon: CircleCheck, tone: "genuine", loading: isInitialLoading },
           { label: "Suspected", value: summary.suspected, meta: share(summary.suspected, decided), icon: CircleAlert, tone: "suspect", loading: isInitialLoading },
-          { label: "Processing", value: summary.processing, icon: LoaderCircle, tone: "brand", loading: isInitialLoading },
+          { label: "Processing", value: summary.processing, icon: FileClock, tone: "brand", loading: isInitialLoading },
         ]}
       />
 
