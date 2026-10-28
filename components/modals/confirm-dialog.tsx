@@ -41,7 +41,7 @@ export function ConfirmDialog({
       title={title}
       description={description}
       tone={tone}
-      icon={tone === "danger" ? <AlertTriangle className="size-[18px]" /> : <Info className="size-[18px]" />}
+      icon={tone === "danger" ? <AlertTriangle className="size-4.5" /> : <Info className="size-4.5" />}
       size="sm"
       dismissible={!loading}
       footer={
@@ -78,7 +78,7 @@ export function TypeToConfirmDialog({ phrase, open, onClose, ...props }: TypeToC
       title={props.title}
       description={props.description}
       tone="danger"
-      icon={<AlertTriangle className="size-[18px]" />}
+      icon={<AlertTriangle className="size-4.5" />}
       size="sm"
       dismissible={!props.loading}
       footer={
@@ -141,7 +141,7 @@ export function NoticeDialog({
       description={message}
       size="sm"
       tone={tone === "error" ? "danger" : "default"}
-      icon={tone === "error" ? <AlertTriangle className="size-[18px]" /> : <CircleCheck className="size-[18px]" />}
+      icon={tone === "error" ? <AlertTriangle className="size-4.5" /> : <CircleCheck className="size-4.5" />}
       footer={
         <>
           {secondaryLabel ? (

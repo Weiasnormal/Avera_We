@@ -47,7 +47,7 @@ export function CaseDetailSkeleton() {
       <Skeleton className="h-8 w-48" />
       <Skeleton className="h-36 w-full rounded-lg" />
       <Skeleton className="h-16 w-full rounded-lg" />
-      <Skeleton className="h-[420px] w-full rounded-lg" />
+      <Skeleton className="h-105 w-full rounded-lg" />
     </div>
   );
 }

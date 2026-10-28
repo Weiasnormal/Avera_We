@@ -162,7 +162,7 @@ export function ProfilePage({ role }: { role: "user" | "admin" }) {
         </Alert>
       ) : null}
 
-      <div className="grid max-w-[880px] gap-6">
+      <div className="grid max-w-220 gap-6">
         <Panel title="Personal details">
           <form onSubmit={save} className="flex flex-col gap-6" noValidate>
             {saveError ? <Alert tone="error">{saveError}</Alert> : null}

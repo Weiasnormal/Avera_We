@@ -205,7 +205,7 @@ export function NewAnalysis() {
       ) : null}
 
       {step === 1 ? (
-        <Panel title="Case details" description="Basic information for this forensic case" className="max-w-[720px] animate-fade-in">
+        <Panel title="Case details" description="Basic information for this forensic case" className="max-w-180 animate-fade-in">
           <form
             className="flex flex-col gap-5"
             onSubmit={(event) => {
@@ -253,7 +253,7 @@ export function NewAnalysis() {
                     <label
                       key={priority}
                       className={cn(
-                        "pressable flex h-9 cursor-pointer items-center rounded-full border px-4 text-[13px] font-semibold has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-brand",
+                        "pressable flex h-9 cursor-pointer items-center rounded-full border px-4 text-[13px] font-semibold has-focus-visible:outline-2 has-focus-visible:outline-brand",
                         selected
                           ? urgent
                             ? "border-danger bg-danger-soft text-danger"
@@ -315,7 +315,7 @@ export function NewAnalysis() {
           </Panel>
 
           <Panel title="Suspected signature" description="Add the 1 questioned sample to verify">
-            <div className="max-w-[640px]">
+            <div className="max-w-160">
               <UploadSlot
                 label="QUESTIONED"
                 caption="Suspected"

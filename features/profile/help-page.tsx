@@ -64,7 +64,7 @@ export function HelpPage({ role }: { role: "user" | "admin" }) {
   return (
     <>
       <PageHeader title="Help & support" description="Answers to common questions about Avera." />
-      <div className="max-w-[760px] divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface shadow-card">
+      <div className="max-w-190 divide-y divide-line overflow-hidden rounded-lg border border-line bg-surface shadow-card">
         {items.map((item) => (
           <details key={item.question} className="group">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 text-[14.5px] font-semibold text-ink hover:bg-canvas [&::-webkit-details-marker]:hidden">

@@ -101,7 +101,7 @@ export function UploadSlot({
         <div
           className={cn(
             "group relative overflow-hidden rounded-lg border bg-surface",
-            isSuspect ? "aspect-[16/7] border-caution-line" : "aspect-[4/3] border-line-strong",
+            isSuspect ? "aspect-16/7 border-caution-line" : "aspect-4/3 border-line-strong",
           )}
           onDragOver={(event) => {
             event.preventDefault();
@@ -114,7 +114,7 @@ export function UploadSlot({
             {/* eslint-disable-next-line @next/next/no-img-element -- local object URL */}
             <img src={image.previewUrl} alt={`${label} preview`} className="size-full object-contain p-2" />
           </button>
-          <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-ink/55 to-transparent px-2.5 pt-6 pb-2 opacity-100 transition-opacity duration-150 sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
+          <div className="absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-linear-to-t from-ink/55 to-transparent px-2.5 pt-6 pb-2 opacity-100 transition-opacity duration-150 sm:opacity-0 sm:group-focus-within:opacity-100 sm:group-hover:opacity-100">
             <span className="truncate text-[11.5px] font-medium text-white/90">{image.sourceName}</span>
             <div className="flex shrink-0 gap-1">
               <SlotAction label={`Preview ${label}`} title="Preview" onClick={onPreview} disabled={disabled}>
@@ -144,7 +144,7 @@ export function UploadSlot({
           onDrop={onDrop}
           className={cn(
             "flex flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 text-center transition-colors duration-150",
-            isSuspect ? "aspect-[16/7]" : "aspect-[4/3]",
+            isSuspect ? "aspect-16/7" : "aspect-4/3",
             locked
               ? "cursor-not-allowed border-line bg-canvas text-ink-4"
               : dragging

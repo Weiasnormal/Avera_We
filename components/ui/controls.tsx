@@ -54,7 +54,7 @@ export function Segmented<T extends string>({
       {indicator ? (
         <span
           aria-hidden
-          className="absolute top-1 bottom-1 rounded-[7px] bg-surface shadow-card transition-[left,width] duration-200 ease-[var(--ease-out)]"
+          className="absolute top-1 bottom-1 rounded-[7px] bg-surface shadow-card transition-[left,width] duration-200 ease-out"
           style={{ left: indicator.left, width: indicator.width }}
         />
       ) : null}
@@ -122,7 +122,7 @@ export function Switch({
         <span
           aria-hidden
           className={cn(
-            "absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow-[0_1px_2px_rgb(15_23_42/0.25)] transition-transform duration-200 ease-[var(--ease-out)]",
+            "absolute top-0.5 left-0.5 size-5 rounded-full bg-white shadow-[0_1px_2px_rgb(15_23_42/0.25)] transition-transform duration-200 ease-out",
             checked && "translate-x-4",
           )}
         />

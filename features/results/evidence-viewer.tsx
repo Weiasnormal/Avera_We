@@ -76,7 +76,7 @@ export function EvidenceViewer({ caseId, overlays }: { caseId: string; overlays:
                   onClick={() => setPreview({ src: image.src, title: `${label} — ${image.isOverlay ? mode : "Uploaded reference"}` })}
                   className="group overflow-hidden rounded-md border border-line text-left transition-[border-color,box-shadow] duration-150 hover:border-brand-line hover:shadow-card"
                 >
-                  <EvidenceImage src={image.src} alt={`${label} ${mode}`} className="aspect-[4/3]" />
+                  <EvidenceImage src={image.src} alt={`${label} ${mode}`} className="aspect-4/3" />
                   <span className="flex items-center justify-between border-t border-line px-2.5 py-1.5 text-[12px]">
                     <span className="font-semibold text-ink">{label}</span>
                     <span className="text-ink-4">{image.isOverlay ? mode : "Original"}</span>
@@ -93,7 +93,7 @@ export function EvidenceViewer({ caseId, overlays }: { caseId: string; overlays:
             onClick={() => setPreview({ src: suspect.src, title: `Suspected signature — ${suspect.isOverlay ? mode : "Uploaded"}` })}
             className="group block w-full overflow-hidden rounded-md border border-caution-line text-left transition-shadow duration-150 hover:shadow-card"
           >
-            <EvidenceImage src={suspect.src} alt={`Suspected signature ${mode}`} className="aspect-[4/3] lg:aspect-auto lg:h-[calc(100%-2rem)] lg:min-h-[300px]" />
+            <EvidenceImage src={suspect.src} alt={`Suspected signature ${mode}`} className="aspect-4/3 lg:aspect-auto lg:h-[calc(100%-2rem)] lg:min-h-75" />
             <span className="flex items-center justify-between border-t border-caution-line bg-caution-soft/50 px-3 py-1.5 text-[12px]">
               <span className="font-semibold text-ink">Suspected signature</span>
               <span className="text-ink-4">{suspect.isOverlay ? mode : "Original"} · click to enlarge</span>

@@ -102,7 +102,7 @@ export function Processing({ caseId }: { caseId: string }) {
     return (
       <>
         <PageHeader title="Case processing" />
-        <Panel className="max-w-[640px]">
+        <Panel className="max-w-160">
           {orphan.status === "checking" ? (
             <div className="flex items-center gap-3 text-ink-3">
               <Spinner /> Checking the case status…
@@ -139,7 +139,7 @@ export function Processing({ caseId }: { caseId: string }) {
   return (
     <>
       <PageHeader title={title} description={`Case ${job.caseCode}`} />
-      <Panel className="max-w-[720px]">
+      <Panel className="max-w-180">
         <div aria-live="polite" className="mb-6">
           <div className="mb-3 flex items-baseline justify-between gap-4">
             <p className={cn("text-[15px] font-semibold", failed ? "text-danger" : "text-ink")}>
@@ -157,7 +157,7 @@ export function Processing({ caseId }: { caseId: string }) {
             <IndeterminateBar />
           ) : (
             <div className="h-1 overflow-hidden rounded-full bg-brand-soft">
-              <div className="h-full rounded-full bg-brand transition-[width] duration-500 ease-[var(--ease-out)]" style={{ width: `${job.progress}%` }} />
+              <div className="h-full rounded-full bg-brand transition-[width] duration-500 ease-out" style={{ width: `${job.progress}%` }} />
             </div>
           )}
         </div>

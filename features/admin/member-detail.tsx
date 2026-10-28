@@ -53,7 +53,7 @@ export function MemberDetail({ memberId }: { memberId: string }) {
     return (
       <div aria-busy className="flex flex-col gap-4">
         <Skeleton className="h-8 w-56" />
-        <Skeleton className="h-40 w-full max-w-[760px] rounded-lg" />
+        <Skeleton className="h-40 w-full max-w-190 rounded-lg" />
       </div>
     );
   }
@@ -103,7 +103,7 @@ export function MemberDetail({ memberId }: { memberId: string }) {
         description={member.email}
       />
 
-      <div className="grid max-w-[760px] gap-6">
+      <div className="grid max-w-190 gap-6">
         <Panel>
           <div className="flex flex-wrap items-center gap-4">
             <Avatar firstName={member.firstName} lastName={member.lastName} size={52} />

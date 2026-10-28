@@ -80,7 +80,7 @@ export function ImageViewer({
             src={src}
             alt={title}
             draggable={false}
-            className="absolute inset-0 size-full object-contain transition-transform duration-150 ease-[var(--ease-out)]"
+            className="absolute inset-0 size-full object-contain transition-transform duration-150 ease-out"
             style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})` }}
           />
         ) : null}

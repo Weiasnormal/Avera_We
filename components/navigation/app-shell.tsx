@@ -75,7 +75,7 @@ function NavLink({ item, pathname, onNavigate }: { item: NavItem; pathname: stri
         active ? "bg-surface text-ink shadow-card" : "text-ink-2 hover:bg-surface/70 hover:text-ink",
       )}
     >
-      <Icon className={cn("size-[17px]", active ? "text-brand" : "text-ink-3 group-hover:text-ink-2")} aria-hidden />
+      <Icon className={cn("size-4.25", active ? "text-brand" : "text-ink-3 group-hover:text-ink-2")} aria-hidden />
       <span className="flex-1">{item.label}</span>
       {item.badge ? (
         <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-[11px] font-bold text-white tabular">
@@ -173,7 +173,7 @@ export function AppShell({ role, children }: { role: "user" | "admin"; children:
 
   return (
     <div className="min-h-dvh lg:pl-[248px]">
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[248px] border-r border-line bg-rail lg:block">{sidebar()}</aside>
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-62 border-r border-line bg-rail lg:block">{sidebar()}</aside>
 
       {drawerOpen ? (
         <div className="fixed inset-0 z-40 lg:hidden">
@@ -183,7 +183,7 @@ export function AppShell({ role, children }: { role: "user" | "admin"; children:
             className="absolute inset-0 bg-ink/40 animate-fade-in"
             onClick={() => setDrawerOpen(false)}
           />
-          <aside className="absolute inset-y-0 left-0 w-[280px] max-w-[85vw] border-r border-line bg-rail shadow-pop animate-[drawer-in_260ms_var(--ease-drawer)]">
+          <aside className="absolute inset-y-0 left-0 w-70 max-w-[85vw] border-r border-line bg-rail shadow-pop animate-[drawer-in_260ms_var(--ease-drawer)]">
             <button
               type="button"
               onClick={() => setDrawerOpen(false)}
@@ -207,7 +207,7 @@ export function AppShell({ role, children }: { role: "user" | "admin"; children:
           <Menu className="size-5" />
         </button>
         <Link href={role === "admin" ? routes.admin.dashboard : routes.examiner.dashboard} className="flex items-center gap-2 lg:hidden">
-          <Image src="/brand/avera-icon.png" alt="" width={24} height={24} className="rounded-[6px]" />
+          <Image src="/brand/avera-icon.png" alt="" width={24} height={24} className="rounded-sm" />
           <span className="text-[15px] font-bold">Avera</span>
         </Link>
         <div className="ml-auto flex items-center gap-1">
@@ -216,7 +216,7 @@ export function AppShell({ role, children }: { role: "user" | "admin"; children:
         </div>
       </header>
 
-      <main id="main" className="mx-auto w-full max-w-[1280px] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+      <main id="main" className="mx-auto w-full max-w-320 px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         {children}
       </main>
 

@@ -31,7 +31,7 @@ export function CropGuideDialog({
               type="checkbox"
               checked={showAgain}
               onChange={(event) => onShowAgainChange(event.target.checked)}
-              className="size-4 accent-[var(--color-brand)]"
+              className="size-4 accent-brand"
             />
             Show this again next time
           </label>

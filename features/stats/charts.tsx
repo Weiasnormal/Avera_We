@@ -96,7 +96,7 @@ export function StackedColumns({ buckets, caption }: { buckets: Bucket[]; captio
                     onPointerLeave={() => setHover(null)}
                   >
                     <div className="flex w-full flex-1 flex-col justify-end pb-px">
-                      <div className="mx-auto flex w-full max-w-10 flex-col gap-[2px]" style={{ height: `${(total / max) * 100}%` }}>
+                      <div className="mx-auto flex w-full max-w-10 flex-col gap-0.5" style={{ height: `${(total / max) * 100}%` }}>
                         {bucket.suspected > 0 ? (
                           <div
                             className="rounded-t-[4px]"
@@ -116,10 +116,10 @@ export function StackedColumns({ buckets, caption }: { buckets: Bucket[]; captio
                       <div className="pointer-events-none absolute bottom-full z-10 mb-1 w-max rounded-md border border-line bg-surface px-3 py-2 text-[12px] shadow-pop animate-fade-in">
                         <p className="mb-1 font-semibold text-ink">{bucket.label}</p>
                         <p className="flex items-center gap-1.5 text-ink-2 tabular">
-                          <span className="size-2 rounded-[2px]" style={{ backgroundColor: SERIES.genuine.color }} /> Genuine {bucket.genuine}
+                          <span className="size-2 rounded-xs" style={{ backgroundColor: SERIES.genuine.color }} /> Genuine {bucket.genuine}
                         </p>
                         <p className="flex items-center gap-1.5 text-ink-2 tabular">
-                          <span className="size-2 rounded-[2px]" style={{ backgroundColor: SERIES.suspected.color }} /> Suspected {bucket.suspected}
+                          <span className="size-2 rounded-xs" style={{ backgroundColor: SERIES.suspected.color }} /> Suspected {bucket.suspected}
                         </p>
                       </div>
                     ) : null}
@@ -145,7 +145,7 @@ export function BarList({ items, emptyLabel = "No data yet" }: { items: { label:
           <span className="truncate text-ink-2">{item.label}</span>
           <span className="h-2 overflow-hidden rounded-full bg-sunken">
             <span
-              className="block h-full rounded-full bg-brand transition-[width] duration-500 ease-[var(--ease-out)]"
+              className="block h-full rounded-full bg-brand transition-[width] duration-500 ease-out"
               style={{ width: `${(item.count / max) * 100}%` }}
             />
           </span>
@@ -162,7 +162,7 @@ export function VerdictSplit({ genuine, suspected }: { genuine: number; suspecte
   const genuinePct = total ? Math.round((genuine / total) * 100) : 0;
   return (
     <div>
-      <div className="flex h-2.5 gap-[2px] overflow-hidden rounded-full bg-sunken">
+      <div className="flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-sunken">
         {genuine > 0 ? <span style={{ flexGrow: genuine, backgroundColor: SERIES.genuine.color }} /> : null}
         {suspected > 0 ? <span style={{ flexGrow: suspected, backgroundColor: SERIES.suspected.color }} /> : null}
       </div>

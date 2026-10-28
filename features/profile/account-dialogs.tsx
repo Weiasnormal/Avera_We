@@ -63,7 +63,7 @@ export function ChangeEmailDialog({ open, onClose, currentEmail }: { open: boole
         open={open}
         onClose={close}
         size="sm"
-        icon={<MailCheck className="size-[18px]" />}
+        icon={<MailCheck className="size-4.5" />}
         title="Check your new inbox"
         description={
           <>

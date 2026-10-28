@@ -28,10 +28,10 @@ export interface DialogProps {
 }
 
 const SIZES = {
-  sm: "sm:max-w-[400px]",
-  md: "sm:max-w-[480px]",
-  lg: "sm:max-w-[640px]",
-  xl: "sm:max-w-[880px]",
+  sm: "sm:max-w-100",
+  md: "sm:max-w-120",
+  lg: "sm:max-w-160",
+  xl: "sm:max-w-220",
   full: "sm:max-w-[min(1200px,calc(100vw-48px))]",
 };
 

@@ -12,7 +12,7 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
             <Image src="/brand/avera-logo.webp" alt="" width={40} height={40} priority />
             <span className="text-[20px] font-bold tracking-[-0.01em]">Avera</span>
           </Link>
-          <div className="mt-auto max-w-[400px]">
+          <div className="mt-auto max-w-100">
             <p className="text-[30px] leading-[1.15] font-bold tracking-[-0.02em]">
               Signature verification, with the evidence in view.
             </p>

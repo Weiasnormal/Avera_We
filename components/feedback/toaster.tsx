@@ -21,7 +21,7 @@ function ToastItem({ toast }: { toast: Toast }) {
   return (
     <div
       role={toast.tone === "error" ? "alert" : "status"}
-      className="pointer-events-auto flex w-full items-start gap-3 rounded-md border border-line bg-surface py-3 pr-2 pl-3.5 text-[13.5px] text-ink shadow-pop animate-toast-in sm:w-[380px]"
+      className="pointer-events-auto flex w-full items-start gap-3 rounded-md border border-line bg-surface py-3 pr-2 pl-3.5 text-[13.5px] text-ink shadow-pop animate-toast-in sm:w-95"
     >
       <Icon
         aria-hidden

@@ -115,7 +115,7 @@ export function Organization() {
                 <div className="mt-3 h-2 overflow-hidden rounded-full bg-sunken">
                   <div
                     className={cn(
-                      "h-full rounded-full transition-[width] duration-500 ease-[var(--ease-out)]",
+                      "h-full rounded-full transition-[width] duration-500 ease-out",
                       level === "full" ? "bg-danger" : level === "warn" ? "bg-caution" : "bg-brand",
                     )}
                     style={{ width: `${limit > 0 ? Math.min(used / limit, 1) * 100 : 100}%` }}

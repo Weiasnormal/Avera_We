@@ -183,8 +183,8 @@ export function CaseTable({
                         <Flag className="ml-2 inline size-3.5 text-caution" aria-label="Flagged for internal review" />
                       ) : null}
                     </td>
-                    <td className="w-full truncate text-ink-2 md:w-auto md:max-w-[220px] md:px-3">{item.subjectName || "—"}</td>
-                    {mode === "admin" ? <td className="hidden truncate text-ink-2 md:table-cell md:max-w-[180px] md:px-3">{item.examiner || "—"}</td> : null}
+                    <td className="w-full truncate text-ink-2 md:w-auto md:max-w-55 md:px-3">{item.subjectName || "—"}</td>
+                    {mode === "admin" ? <td className="hidden truncate text-ink-2 md:table-cell md:max-w-45 md:px-3">{item.examiner || "—"}</td> : null}
                     <td className="hidden text-ink-2 lg:table-cell lg:px-3">
                       {item.documentType === "Other" && item.otherDocumentType ? item.otherDocumentType : item.documentType}
                     </td>

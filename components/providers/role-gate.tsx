@@ -29,7 +29,7 @@ async function Gate({ role, children }: { role: AppRole; children: ReactNode }) 
 function ShellFallback() {
   return (
     <div className="min-h-dvh lg:pl-[248px]" aria-busy>
-      <div className="fixed inset-y-0 left-0 hidden w-[248px] border-r border-line bg-rail lg:block" />
+      <div className="fixed inset-y-0 left-0 hidden w-62 border-r border-line bg-rail lg:block" />
       <div className="h-16 border-b border-line" />
     </div>
   );

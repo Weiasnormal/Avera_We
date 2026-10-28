@@ -106,7 +106,7 @@ export function NotificationBell() {
         }}
         className="pressable relative flex size-10 items-center justify-center rounded-md text-ink-2 hover:bg-sunken hover:text-ink"
       >
-        <Bell className="size-[18px]" />
+        <Bell className="size-4.5" />
         {unread > 0 ? (
           <span className="absolute top-1.5 right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[10px] font-bold text-white tabular">
             {unread > 9 ? "9+" : unread}
@@ -118,7 +118,7 @@ export function NotificationBell() {
         <div
           role="dialog"
           aria-label="Notifications"
-          className="fixed inset-x-3 top-16 z-50 origin-top-right rounded-lg border border-line bg-surface shadow-pop animate-rise-in sm:absolute sm:inset-x-auto sm:top-12 sm:right-0 sm:w-[380px]"
+          className="fixed inset-x-3 top-16 z-50 origin-top-right rounded-lg border border-line bg-surface shadow-pop animate-rise-in sm:absolute sm:inset-x-auto sm:top-12 sm:right-0 sm:w-95"
         >
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <p className="text-[14px] font-semibold">Notifications</p>

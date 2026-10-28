@@ -155,7 +155,7 @@ export function CaseReview({ caseId }: { caseId: string }) {
                         <label
                           key={option}
                           className={cn(
-                            "pressable flex cursor-pointer items-start gap-3 rounded-md border px-3.5 py-3 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-brand",
+                            "pressable flex cursor-pointer items-start gap-3 rounded-md border px-3.5 py-3 has-focus-visible:outline-2 has-focus-visible:outline-brand",
                             selected
                               ? option === "SUSPECTED"
                                 ? "border-suspect bg-suspect-soft"

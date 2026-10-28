@@ -169,7 +169,7 @@ export function ExaminerDashboard() {
                       className="flex w-full items-center gap-3 px-5 py-3 text-left transition-colors hover:bg-canvas"
                     >
                       <span className={`flex size-9 shrink-0 items-center justify-center rounded-md ${meta.tone}`}>
-                        <Icon className="size-[17px]" aria-hidden />
+                        <Icon className="size-4.25" aria-hidden />
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[13.5px] font-semibold text-ink">{entry.title}</span>
