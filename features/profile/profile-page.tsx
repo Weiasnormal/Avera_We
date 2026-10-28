@@ -9,6 +9,7 @@ import { resetUserState } from "@/components/providers/session-provider";
 import { Alert } from "@/components/feedback/states";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import { Switch } from "@/components/ui/controls";
 import { TextField } from "@/components/ui/field";
 import { PageHeader, Panel } from "@/components/ui/panel";
@@ -162,11 +163,11 @@ export function ProfilePage({ role }: { role: "user" | "admin" }) {
         </Alert>
       ) : null}
 
-      <div className="grid max-w-220 gap-6">
+      <div className="grid max-w-220 gap-4 sm:gap-6">
         <Panel title="Personal details">
           <form onSubmit={save} className="flex flex-col gap-6" noValidate>
             {saveError ? <Alert tone="error">{saveError}</Alert> : null}
-            <div className="flex flex-wrap items-center gap-5">
+            <div className="flex items-center gap-4 sm:gap-5">
               <div className="relative">
                 <Avatar
                   src={avatar?.url ?? authApi.profilePictureUrl(avatarVersion)}
@@ -200,6 +201,7 @@ export function ProfilePage({ role }: { role: "user" | "admin" }) {
                 <p className="text-[17px] font-bold text-ink">{displayName(profile, email)}</p>
                 <p className="text-[13px] text-ink-3">{ROLE_LABEL[role]}</p>
                 <p className="text-[13px] text-ink-3">{profile?.organization || "Organization unavailable"}</p>
+                {email ? <p className="mt-1 truncate text-[12.5px] text-ink-4">{email}</p> : null}
               </div>
             </div>
 
@@ -219,7 +221,7 @@ export function ProfilePage({ role }: { role: "user" | "admin" }) {
                 error={nameErrors.lastName}
               />
             </div>
-            <div className="flex justify-end gap-2 border-t border-line pt-5">
+            <div className="flex flex-col-reverse gap-2 border-t border-line pt-5 sm:flex-row sm:justify-end">
               {dirty ? (
                 <Button
                   variant="ghost"
@@ -268,21 +270,18 @@ export function ProfilePage({ role }: { role: "user" | "admin" }) {
               title="Default result view"
               detail="The evidence view shown first when you open a result."
               action={
-                <select
-                  aria-label="Default result view"
+                <Select
                   value={defaultView}
-                  onChange={(event) => {
-                    const value = event.target.value as ResultViewMode;
+                  onChange={(value) => {
                     setDefaultView(value);
                     writePreference(DEFAULT_VIEW_PREF, value);
                     toast.success(`Default view set to ${value}`);
                   }}
-                  className="h-8 rounded-md border border-line-strong bg-surface px-2.5 text-[13px] font-medium outline-none focus:border-brand"
-                >
-                  {RESULT_VIEW_MODES.map((mode) => (
-                    <option key={mode}>{mode}</option>
-                  ))}
-                </select>
+                  options={RESULT_VIEW_MODES.map((mode) => ({ value: mode, label: mode }))}
+                  label="Default result view"
+                  variant="field"
+                  className="w-full sm:w-44"
+                />
               }
             />
           ) : null}
@@ -325,13 +324,13 @@ export function ProfilePage({ role }: { role: "user" | "admin" }) {
 
 function SettingsRow({ icon, title, detail, action }: { icon: React.ReactNode; title: string; detail?: string; action: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3 py-3">
+    <div className="flex flex-wrap items-center gap-3 py-3">
       <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-sunken text-ink-2">{icon}</div>
       <div className="min-w-0 flex-1">
         <p className="text-[14px] font-semibold text-ink">{title}</p>
-        {detail ? <p className="truncate text-[13px] text-ink-3">{detail}</p> : null}
+        {detail ? <p className="break-words text-[13px] text-ink-3">{detail}</p> : null}
       </div>
-      {action}
+      <div className="ml-auto w-full sm:w-auto">{action}</div>
     </div>
   );
 }

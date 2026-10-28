@@ -1,8 +1,8 @@
 "use client";
 
-import { ChevronRight, Flag, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Flag, Search } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { EmptyState, LoadError } from "@/components/feedback/states";
 import { PriorityLabel, VerdictBadge, WorkflowBadge } from "@/components/ui/badge";
@@ -23,6 +23,13 @@ type SortKey = "Newest first" | "Oldest first" | "Suspected first" | "Genuine fi
 const SORTS: SortKey[] = ["Newest first", "Oldest first", "Suspected first", "Genuine first"];
 const SORT_OPTIONS = SORTS.map((value) => ({ value, label: value }));
 const PRIORITY_OPTIONS = [{ value: "All", label: "All priorities" }, ...PRIORITIES.map((value) => ({ value: value as string, label: value }))];
+/** Numbered pages with ellipses, at most 7 slots so the row stays one line. */
+const pageItems = (page: number, pageCount: number): Array<number | "ellipsis-start" | "ellipsis-end"> => {
+  if (pageCount <= 7) return Array.from({ length: pageCount }, (_, index) => index + 1);
+  if (page <= 4) return [1, 2, 3, 4, 5, "ellipsis-end", pageCount];
+  if (page >= pageCount - 3) return [1, "ellipsis-start", pageCount - 4, pageCount - 3, pageCount - 2, pageCount - 1, pageCount];
+  return [1, "ellipsis-start", page - 1, page, page + 1, "ellipsis-end", pageCount];
+};
 
 function verdictOptions(mode: Mode) {
   const values = mode === "admin" ? ["All", "Genuine", "Suspected", "Pending"] : ["All", "Genuine", "Suspected", "Processing"];
@@ -70,6 +77,49 @@ const COLUMN_VISIBILITY = {
   },
 } as const;
 
+const ARROW =
+  "pressable flex size-9 items-center justify-center rounded-md border border-line-strong bg-surface text-ink-2 hover:border-ink-4/60 hover:text-ink disabled:cursor-not-allowed disabled:opacity-40 sm:size-8";
+
+function Pagination({ page, pageCount, onChange }: { page: number; pageCount: number; onChange: (page: number) => void }) {
+  return (
+    <nav aria-label="Case pages" className="flex items-center gap-1">
+      <button type="button" className={ARROW} onClick={() => onChange(page - 1)} disabled={page === 1} aria-label="Previous page">
+        <ChevronLeft className="size-4" aria-hidden />
+      </button>
+      {/* Phones: a compact counter; numbered pages from sm up. */}
+      <span className="px-2 text-[13px] font-medium text-ink-2 tabular sm:hidden" aria-live="polite">
+        Page {page} of {pageCount}
+      </span>
+      <div className="hidden items-center gap-1 sm:flex">
+        {pageItems(page, pageCount).map((item) =>
+          typeof item === "number" ? (
+            <button
+              key={item}
+              type="button"
+              aria-current={item === page ? "page" : undefined}
+              aria-label={`Page ${item}`}
+              onClick={() => onChange(item)}
+              className={cn(
+                "pressable flex size-8 items-center justify-center rounded-md text-[12.5px] font-semibold tabular transition-colors duration-150",
+                item === page ? "bg-brand text-white" : "text-ink-2 hover:bg-sunken hover:text-ink",
+              )}
+            >
+              {item}
+            </button>
+          ) : (
+            <span key={item} className="flex size-8 items-center justify-center text-ink-4" aria-hidden>
+              …
+            </span>
+          ),
+        )}
+      </div>
+      <button type="button" className={ARROW} onClick={() => onChange(page + 1)} disabled={page === pageCount} aria-label="Next page">
+        <ChevronRight className="size-4" aria-hidden />
+      </button>
+    </nav>
+  );
+}
+
 export function CaseTable({
   cases,
   mode,
@@ -81,6 +131,7 @@ export function CaseTable({
   limit,
   toolbar = true,
   dateColumn = "created",
+  pageSize,
 }: {
   cases: CaseSummary[];
   mode: Mode;
@@ -93,13 +144,29 @@ export function CaseTable({
   toolbar?: boolean;
   /** "waiting" shows how long each case has waited instead of its creation date (review queues). */
   dateColumn?: "created" | "waiting";
+  /** Paginates the filtered, sorted list; search and filters always cover every case. */
+  pageSize?: number;
 }) {
-  const [query, setQuery] = useState("");
-  const [verdict, setVerdict] = useState(initialVerdict);
-  const [priority, setPriority] = useState("All");
-  const [sort, setSort] = useState<SortKey>("Newest first");
+  const [query, setQueryValue] = useState("");
+  const [verdict, setVerdictValue] = useState(initialVerdict);
+  const [priority, setPriorityValue] = useState("All");
+  const [sort, setSortValue] = useState<SortKey>("Newest first");
+  const [page, setPage] = useState(1);
+  const topRef = useRef<HTMLDivElement>(null);
 
-  const visible = useMemo(() => {
+  // Any change to what's listed starts again from the first page.
+  const resetting =
+    <T,>(setter: (value: T) => void) =>
+    (value: T) => {
+      setter(value);
+      setPage(1);
+    };
+  const setQuery = resetting(setQueryValue);
+  const setVerdict = resetting(setVerdictValue);
+  const setPriority = resetting(setPriorityValue);
+  const setSort = resetting(setSortValue);
+
+  const matching = useMemo(() => {
     const filtered = cases.filter(
       (item) =>
         applyVerdict(item, verdict, mode) &&
@@ -110,6 +177,19 @@ export function CaseTable({
     return limit ? sorted.slice(0, limit) : sorted;
   }, [cases, limit, mode, priority, query, sort, verdict]);
 
+  const pageCount = pageSize ? Math.max(1, Math.ceil(matching.length / pageSize)) : 1;
+  // Clamp when the list shrinks under the current page (e.g. a live update).
+  const currentPage = Math.min(page, pageCount);
+  const firstIndex = pageSize ? (currentPage - 1) * pageSize : 0;
+  const visible = pageSize ? matching.slice(firstIndex, firstIndex + pageSize) : matching;
+
+  const goToPage = (next: number) => {
+    setPage(Math.min(pageCount, Math.max(1, next)));
+    // Bring the top of the list back into view; the controls sit below it.
+    const top = topRef.current?.getBoundingClientRect().top ?? 0;
+    if (top < 0) topRef.current?.scrollIntoView({ block: "start" });
+  };
+
   // Secondary columns appear by the table's own width (container queries), not the
   // viewport's, because the same table sits full-width on list pages and beside a
   // side panel on dashboards. Each step leaves room for the longest case codes.
@@ -118,7 +198,7 @@ export function CaseTable({
   const filtersActive = Boolean(query.trim()) || verdict !== "All" || priority !== "All";
 
   return (
-    <div>
+    <div ref={topRef} className="scroll-mt-20">
       {toolbar ? (
         <div className="mb-4 flex flex-col gap-3 xl:flex-row xl:items-center">
           <label className="relative block flex-1 xl:max-w-sm">
@@ -238,10 +318,14 @@ export function CaseTable({
           </table>
         )}
       </div>
-      {toolbar && visible.length > 0 ? (
-        <p className="mt-3 text-[12.5px] text-ink-3 tabular">
-          Showing {visible.length} of {cases.length} case{cases.length === 1 ? "" : "s"}
-        </p>
+      {toolbar && matching.length > 0 ? (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-[12.5px] text-ink-3">
+          <p className="tabular">
+            Showing {firstIndex + 1}–{firstIndex + visible.length} of {matching.length}{" "}
+            {filtersActive ? "matching " : ""}case{matching.length === 1 ? "" : "s"}
+          </p>
+          {pageCount > 1 ? <Pagination page={currentPage} pageCount={pageCount} onChange={goToPage} /> : null}
+        </div>
       ) : null}
     </div>
   );

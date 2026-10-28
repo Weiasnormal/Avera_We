@@ -5,10 +5,7 @@ import {
   Building2,
   FolderOpen,
   LayoutDashboard,
-  LifeBuoy,
-  LogOut,
   Menu,
-  UserRound,
   Users,
   X,
   type LucideIcon,
@@ -20,16 +17,16 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { ConfirmDialog } from "@/components/modals/confirm-dialog";
 import { resetUserState } from "@/components/providers/session-provider";
-import { Avatar } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/spinner";
+import { usePresence } from "@/hooks/use-presence";
 import { cn } from "@/lib/cn";
 import { routes } from "@/lib/routes";
-import { profilePictureUrl } from "@/services/auth";
 import { useAdminStore } from "@/stores/admin";
-import { displayName, useSessionStore } from "@/stores/session";
+import { useSessionStore } from "@/stores/session";
 
 import { NotificationBell } from "./notification-bell";
 import { NewAnalysisButton } from "./new-analysis-button";
+import { ProfileMenu } from "./profile-menu";
 
 interface NavItem {
   href: string;
@@ -38,8 +35,6 @@ interface NavItem {
   exact?: boolean;
   badge?: number;
 }
-
-const ROLE_LABEL = { user: "Forensic Document Examiner", admin: "Org Admin" } as const;
 
 function useNavItems(role: "user" | "admin"): NavItem[] {
   const pendingCount = useAdminStore((state) => state.pending.length);
@@ -87,14 +82,46 @@ function NavLink({ item, pathname, onNavigate }: { item: NavItem; pathname: stri
   );
 }
 
+/**
+ * Logo, product name and the signed-in organization underneath, so users always
+ * see which organization's workspace they are in (sidebar on desktop, header on phones).
+ */
+function Brand({ compact }: { compact?: boolean }) {
+  const loaded = useSessionStore((state) => state.profile !== null);
+  const organization = useSessionStore((state) => state.profile?.organization ?? "");
+  return (
+    <span className="flex min-w-0 items-center gap-2.5">
+      <Image
+        src="/brand/avera-icon.png"
+        alt=""
+        width={compact ? 28 : 32}
+        height={compact ? 28 : 32}
+        className={cn("shrink-0", compact ? "rounded-[7px]" : "rounded-lg")}
+        priority={!compact}
+      />
+      <span className="flex min-w-0 flex-col">
+        <span className={cn("leading-tight font-bold tracking-[-0.01em] text-ink", compact ? "text-[15px]" : "text-[16px]")}>Avera</span>
+        {/* Fixed height so nothing shifts when the profile arrives. */}
+        <span className="flex h-4 items-center">
+          {loaded ? (
+            <span className="truncate text-[12px] font-medium text-ink-3" title={organization}>
+              {organization || "No organization"}
+            </span>
+          ) : (
+            <Skeleton className="h-2.5 w-24" />
+          )}
+        </span>
+      </span>
+    </span>
+  );
+}
+
 export function AppShell({ role, children }: { role: "user" | "admin"; children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const items = useNavItems(role);
-  const profile = useSessionStore((state) => state.profile);
-  const claims = useSessionStore((state) => state.claims);
-  const avatarVersion = useSessionStore((state) => state.avatarVersion);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawer = usePresence(drawerOpen, 200);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
@@ -121,22 +148,8 @@ export function AppShell({ role, children }: { role: "user" | "admin"; children:
 
   const sidebar = (onNavigate?: () => void) => (
     <div className="flex h-full flex-col">
-      <div className="flex h-16 items-center gap-2.5 px-5">
-        <Image src="/brand/avera-icon.png" alt="" width={28} height={28} className="rounded-[7px]" priority />
-        <span className="text-[17px] font-bold tracking-[-0.01em] text-ink">Avera</span>
-      </div>
-
-      <div className="px-3 pb-2 text-[12px] text-ink-3">
-        {/* Fixed line height so the nav below doesn't jump when the profile arrives. */}
-        {profile ? (
-          <p className="h-[18px] truncate px-2 font-medium text-ink-2" title={profile.organization}>
-            {profile.organization || "Organization unavailable"}
-          </p>
-        ) : (
-          <div className="flex h-[18px] items-center px-2">
-            <Skeleton className="h-3 w-36" />
-          </div>
-        )}
+      <div className="flex h-16 items-center pr-12 pl-5 lg:pr-5">
+        <Brand />
       </div>
 
       {role === "user" ? (
@@ -151,31 +164,6 @@ export function AppShell({ role, children }: { role: "user" | "admin"; children:
         ))}
       </nav>
 
-      <div className="mt-auto flex flex-col gap-0.5 px-3 pb-3">
-        <NavLink item={{ href: helpHref, label: "Help & support", icon: LifeBuoy }} pathname={pathname} onNavigate={onNavigate} />
-        <NavLink item={{ href: profileHref, label: "Profile & settings", icon: UserRound }} pathname={pathname} onNavigate={onNavigate} />
-        <div className="mt-2 flex items-center gap-3 rounded-md border border-line bg-surface px-3 py-2.5">
-          <Avatar
-            src={profilePictureUrl(avatarVersion)}
-            firstName={profile?.firstName}
-            lastName={profile?.lastName}
-            size={34}
-          />
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] font-semibold text-ink">{displayName(profile, claims?.email ?? "")}</p>
-            <p className="truncate text-[11.5px] text-ink-3">{ROLE_LABEL[role]}</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setConfirmSignOut(true)}
-            aria-label="Sign out"
-            title="Sign out"
-            className="pressable flex size-8 items-center justify-center rounded-md text-ink-3 hover:bg-sunken hover:text-ink"
-          >
-            <LogOut className="size-4" />
-          </button>
-        </div>
-      </div>
     </div>
   );
 
@@ -183,15 +171,20 @@ export function AppShell({ role, children }: { role: "user" | "admin"; children:
     <div className="min-h-dvh lg:pl-[248px]">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-62 border-r border-line bg-rail lg:block">{sidebar()}</aside>
 
-      {drawerOpen ? (
-        <div className="fixed inset-0 z-40 lg:hidden">
+      {drawer.mounted ? (
+        <div className={cn("fixed inset-0 z-40 lg:hidden", drawer.closing && "pointer-events-none")}>
           <button
             type="button"
             aria-label="Close menu"
-            className="absolute inset-0 bg-ink/40 animate-fade-in"
+            className={cn("absolute inset-0 bg-ink/40", drawer.closing ? "animate-fade-out" : "animate-fade-in")}
             onClick={() => setDrawerOpen(false)}
           />
-          <aside className="absolute inset-y-0 left-0 w-70 max-w-[85vw] border-r border-line bg-rail shadow-pop animate-[drawer-in_260ms_var(--ease-drawer)]">
+          <aside
+            className={cn(
+              "absolute inset-y-0 left-0 w-70 max-w-[85vw] border-r border-line bg-rail shadow-pop",
+              drawer.closing ? "animate-drawer-out" : "animate-drawer-in",
+            )}
+          >
             <button
               type="button"
               onClick={() => setDrawerOpen(false)}
@@ -214,12 +207,12 @@ export function AppShell({ role, children }: { role: "user" | "admin"; children:
         >
           <Menu className="size-5" />
         </button>
-        <Link href={role === "admin" ? routes.admin.dashboard : routes.examiner.dashboard} className="flex items-center gap-2 lg:hidden">
-          <Image src="/brand/avera-icon.png" alt="" width={24} height={24} className="rounded-sm" />
-          <span className="text-[15px] font-bold">Avera</span>
+        <Link href={role === "admin" ? routes.admin.dashboard : routes.examiner.dashboard} className="min-w-0 flex-1 lg:hidden">
+          <Brand compact />
         </Link>
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5">
           <NotificationBell />
+          <ProfileMenu role={role} profileHref={profileHref} helpHref={helpHref} onSignOut={() => setConfirmSignOut(true)} />
         </div>
       </header>
 

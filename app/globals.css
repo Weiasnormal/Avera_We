@@ -67,6 +67,12 @@
   --animate-rise-in: rise-in 220ms var(--ease-out);
   --animate-toast-in: toast-in 260ms var(--ease-out);
   --animate-popover-in: pop-in 160ms var(--ease-out);
+  --animate-sheet-in: sheet-in 320ms var(--ease-drawer);
+  /* Exits are quicker than entrances: the system is responding, not presenting. */
+  --animate-sheet-out: sheet-out 200ms var(--ease-out) forwards;
+  --animate-drawer-in: drawer-in 280ms var(--ease-drawer);
+  --animate-drawer-out: drawer-out 200ms var(--ease-out) forwards;
+  --animate-fade-out: fade-out 200ms var(--ease-out) forwards;
 }
 
 @keyframes fade-in {
@@ -94,6 +100,31 @@
   from {
     opacity: 0;
     transform: translateY(12px);
+  }
+}
+
+/* Bottom sheets rise from below the viewport edge. */
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes sheet-out {
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes drawer-out {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
   }
 }
 
@@ -259,6 +290,16 @@
       0 8px,
       8px -8px,
       -8px 0;
+  }
+}
+
+/* iOS Safari zooms the page when a field under 16px gets focus, which breaks the
+   layout. Phones get 16px fields; unlayered so it beats `text-sm` utilities. */
+@media (max-width: 639px) {
+  input:not([type="checkbox"], [type="radio"], [type="file"]),
+  textarea,
+  select {
+    font-size: 16px;
   }
 }
 

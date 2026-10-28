@@ -2,7 +2,6 @@
 
 import { useSearchParams } from "next/navigation";
 
-import { NewAnalysisButton } from "@/components/navigation/new-analysis-button";
 import { PageHeader } from "@/components/ui/panel";
 import { CaseTable, verdictFromParam } from "@/features/cases/case-table";
 import { useCases } from "@/hooks/use-cases";
@@ -14,7 +13,7 @@ export function ExaminerCases() {
   const { cases, error, reload, isInitialLoading } = useCases();
   return (
     <>
-      <PageHeader title="Cases" description="Every signature analysis you have submitted." actions={<NewAnalysisButton className="lg:hidden" />} />
+      <PageHeader title="Cases" description="Every signature analysis you have submitted." />
       <CaseTable
         // Remount when a dashboard link changes the filter on this same route.
         key={params.get("filter") ?? "all"}
@@ -27,6 +26,7 @@ export function ExaminerCases() {
         error={error}
         onRetry={() => void reload()}
         initialVerdict={verdictFromParam(params.get("filter"), "user")}
+        pageSize={25}
       />
     </>
   );

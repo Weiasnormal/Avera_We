@@ -43,7 +43,7 @@ export function AdminCases() {
       />
       <CaseTable
         // Remount when a dashboard link changes the filter on this same route.
-        key={params.get("filter") ?? "all"}
+        key={`${params.get("filter") ?? "all"}:${examinerId ?? ""}`}
         cases={scoped}
         mode="admin"
         hrefFor={(item) => routes.admin.caseReview(item.caseId)}
@@ -51,6 +51,7 @@ export function AdminCases() {
         error={error}
         onRetry={() => void reload()}
         initialVerdict={verdictFromParam(params.get("filter"), "admin")}
+        pageSize={25}
       />
     </>
   );
